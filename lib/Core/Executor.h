@@ -48,6 +48,7 @@ namespace llvm {
 #endif
   class Twine;
   class Value;
+  class ExecutionEngine;
 }
 
 namespace klee {  
@@ -414,7 +415,8 @@ private:
   void printDebugInstructions(ExecutionState &state);
 
 public:
-  Executor(const InterpreterOptions &opts, InterpreterHandler *ie);
+  Executor(const InterpreterOptions &opts, InterpreterHandler *ie,
+           llvm::ExecutionEngine *engine = NULL);
   virtual ~Executor();
 
   const InterpreterHandler& getHandler() {

@@ -85,19 +85,25 @@ void *ExternalDispatcher::resolveSymbol(const std::string &name) {
   return addr;
 }
 
-ExternalDispatcher::ExternalDispatcher() {
+ExternalDispatcher::ExternalDispatcher(ExecutionEngine* engine) {
   dispatchModule = new Module("ExternalDispatcher", getGlobalContext());
 
-  std::string error;
-  executionEngine = ExecutionEngine::createJIT(dispatchModule, &error);
-  if (!executionEngine) {
-    llvm::errs() << "unable to make jit: " << error << "\n";
-    abort();
-  }
+  originalEngine = engine;
+  if(engine) {
+    executionEngine = engine;
+    executionEngine->addModule(dispatchModule);
+  } else {
+    std::string error;
+    executionEngine = ExecutionEngine::createJIT(dispatchModule, &error);
+    if (!executionEngine) {
+      llvm::errs() << "unable to make jit: " << error << "\n";
+      abort();
+    }
 
-  // If we have a native target, initialize it to ensure it is linked in and
-  // usable by the JIT.
-  llvm::InitializeNativeTarget();
+    // If we have a native target, initialize it to ensure it is linked in and
+    // usable by the JIT.
+    llvm::InitializeNativeTarget();
+  }
 
   // from ExecutionEngine::create
   if (executionEngine) {
@@ -116,7 +122,8 @@ ExternalDispatcher::ExternalDispatcher() {
 }
 
 ExternalDispatcher::~ExternalDispatcher() {
-  delete executionEngine;
+  if(!originalEngine)
+    delete executionEngine;
 }
 
 bool ExternalDispatcher::executeCall(Function *f, Instruction *i, uint64_t *args) {
