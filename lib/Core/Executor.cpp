@@ -3210,7 +3210,15 @@ void Executor::executeMemoryOperation(ExecutionState &state,
                                 "readonly.err");
         } else {
           ObjectState *wos = state.addressSpace.getWriteable(mo, os);
-          wos->write(offset, value);
+          if(!mo->isSharedConcrete) {
+              wos->write(offset, value);
+          } else {
+              // SharedConcrete objects can only be written by
+              // concrete address with concrete value
+              wos->write(
+                  toConstant(state, offset, "write to shared concrete memory"),
+                  toConstant(state, value, "write to shared concrete memory"));
+          }
         }          
       } else {
         ref<Expr> result = os->read(offset, type);
@@ -3254,7 +3262,16 @@ void Executor::executeMemoryOperation(ExecutionState &state,
                                 "readonly.err");
         } else {
           ObjectState *wos = bound->addressSpace.getWriteable(mo, os);
-          wos->write(mo->getOffsetExpr(address), value);
+          ref<Expr> offset = mo->getOffsetExpr(address);
+          if(!mo->isSharedConcrete) {
+              wos->write(offset, value);
+          } else {
+              // SharedConcrete objects can only be written by
+              // concrete address with concrete value
+              wos->write(
+                  toConstant(state, offset, "write to shared concrete memory"),
+                  toConstant(state, value, "write to shared concrete memory"));
+          }
         }
       } else {
         ref<Expr> result = os->read(mo->getOffsetExpr(address), type);
