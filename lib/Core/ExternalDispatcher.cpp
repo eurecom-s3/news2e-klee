@@ -260,12 +260,16 @@ Function *ExternalDispatcher::createDispatcher(Function *target, Instruction *in
   Constant *dispatchTarget =
     dispatchModule->getOrInsertFunction(target->getName(), FTy,
                                         target->getAttributes());
+  Instruction *funcPtrCast = new BitCastInst(dispatchTarget, 
+                                             cs.getCalledValue()->getType(),
+                                             "",
+                                             dBB);
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 0)
-  Instruction *result = CallInst::Create(dispatchTarget,
+  Instruction *result = CallInst::Create(funcPtrCast,
                                          llvm::ArrayRef<Value *>(args, args+i),
                                          "", dBB);
 #else
-  Instruction *result = CallInst::Create(dispatchTarget, args, args+i, "", dBB);
+  Instruction *result = CallInst::Create(funcPtrCast, args, args+i, "", dBB);
 #endif
   if (result->getType() != Type::getVoidTy(getGlobalContext())) {
     Instruction *resp = 
