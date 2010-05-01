@@ -125,11 +125,14 @@ ExecutionState::ExecutionState(const ExecutionState& state):
   for (unsigned int i=0; i<symbolics.size(); i++)
     symbolics[i].first->refCount++;
 }
+ExecutionState* ExecutionState::clone() {
+  return new ExecutionState(*this);
+}
 
 ExecutionState *ExecutionState::branch() {
   depth++;
 
-  ExecutionState *falseState = new ExecutionState(*this);
+  ExecutionState *falseState = clone();
   falseState->coveredNew = false;
   falseState->coveredLines.clear();
 

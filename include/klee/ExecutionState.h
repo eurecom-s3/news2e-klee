@@ -148,6 +148,9 @@ public:
 private:
   ExecutionState() : ptreeNode(0) {}
 
+protected:
+  virtual ExecutionState* clone();
+
 public:
   ExecutionState(KFunction *kf);
 
@@ -157,8 +160,8 @@ public:
 
   ExecutionState(const ExecutionState &state);
 
-  ~ExecutionState();
-
+  virtual ~ExecutionState();
+  
   ExecutionState *branch();
 
   void pushFrame(KInstIterator caller, KFunction *kf);
