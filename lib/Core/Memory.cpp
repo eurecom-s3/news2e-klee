@@ -334,6 +334,10 @@ void ObjectState::flushRangeForWrite(unsigned rangeBase,
   } 
 }
 
+bool ObjectState::isAllConcrete() const {
+  return !concreteMask || concreteMask->isAllOnes(size);
+}
+
 bool ObjectState::isByteConcrete(unsigned offset) const {
   return !concreteMask || concreteMask->get(offset);
 }

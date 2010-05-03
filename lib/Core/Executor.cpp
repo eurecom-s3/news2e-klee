@@ -2898,7 +2898,7 @@ void Executor::callExternalFunction(ExecutionState &state,
     }
   }
 
-  state.addressSpace.copyOutConcretes();
+  copyOutConcretes(state);
 
   if (!SuppressExternalWarnings) {
 
@@ -2925,7 +2925,7 @@ void Executor::callExternalFunction(ExecutionState &state,
     return;
   }
 
-  if (!state.addressSpace.copyInConcretes()) {
+  if (!copyInConcretes(state)) {
     terminateStateOnError(state, "external modified read-only object",
                           "external.err");
     return;
@@ -3631,4 +3631,14 @@ Expr::Width Executor::getWidthForLLVMType(LLVM_TYPE_Q llvm::Type *type) const {
 Interpreter *Interpreter::create(const InterpreterOptions &opts,
                                  InterpreterHandler *ih) {
   return new Executor(opts, ih);
+}
+
+void Executor::copyOutConcretes(ExecutionState &state)
+{
+    state.addressSpace.copyOutConcretes();
+}
+
+bool Executor::copyInConcretes(ExecutionState &state)
+{
+    return state.addressSpace.copyInConcretes();
 }
