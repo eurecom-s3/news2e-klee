@@ -338,6 +338,14 @@ bool ObjectState::isAllConcrete() const {
   return !concreteMask || concreteMask->isAllOnes(size);
 }
 
+uint8_t *ObjectState::getConcreteStore() const
+{
+    if (!isAllConcrete()) {
+        return NULL;
+    }
+    return concreteStore;
+}
+
 bool ObjectState::isByteConcrete(unsigned offset) const {
   return !concreteMask || concreteMask->get(offset);
 }

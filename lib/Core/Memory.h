@@ -236,6 +236,8 @@ public:
 
   bool isAllConcrete() const;
 
+  uint8_t *getConcreteStore() const;
+
 private:
   const UpdateList &getUpdates() const;
 
