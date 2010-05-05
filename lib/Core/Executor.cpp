@@ -2686,7 +2686,7 @@ std::string Executor::getAddressInfo(ExecutionState &state,
     example = value->getZExtValue();
     info << "\texample: " << example << "\n";
     std::pair< ref<Expr>, ref<Expr> > res = solver->getRange(state, address);
-    info << "\trange: [" << res.first << ", " << res.second <<"]\n";
+    info << "\trange: [" << res.first << ", " << res.second << "]\n";
   }
   
   MemoryObject hack((unsigned) example);    
@@ -2711,7 +2711,7 @@ std::string Executor::getAddressInfo(ExecutionState &state,
       const MemoryObject *mo = lower->first;
       std::string alloc_info;
       mo->getAllocInfo(alloc_info);
-      info << "object at " << mo->address 
+      info << "object at " << mo->address
            << " of size " << mo->size << "\n"
            << "\t\t" << alloc_info << "\n";
     }
