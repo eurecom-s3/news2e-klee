@@ -138,6 +138,9 @@ private:
   /// happens with other states (that don't satisfy the seeds) depends
   /// on as-yet-to-be-determined flags.
   std::map<ExecutionState*, std::vector<SeedInfo> > seedMap;
+
+  /// Map of predefined global values
+  std::map<std::string, void*> predefinedSymbols;
   
   /// Map of globals to their representative memory object.
   std::map<const llvm::GlobalValue*, MemoryObject*> globalObjects;
