@@ -3648,3 +3648,8 @@ void Executor::addSpecialFunctionHandler(Function* function,
 {
     specialFunctionHandler->addUHandler(function, handler);
 }
+
+void Executor::setAllExternalWarnings(bool value)
+{
+    AllExternalWarnings.setValue(value);
+}
