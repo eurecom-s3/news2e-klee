@@ -3642,3 +3642,9 @@ bool Executor::copyInConcretes(ExecutionState &state)
 {
     return state.addressSpace.copyInConcretes();
 }
+
+void Executor::addSpecialFunctionHandler(Function* function,
+                                         FunctionHandler handler)
+{
+    specialFunctionHandler->addUHandler(function, handler);
+}

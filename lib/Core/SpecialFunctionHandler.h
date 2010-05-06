@@ -32,10 +32,25 @@ namespace klee {
                                                     KInstruction *target, 
                                                     std::vector<ref<Expr> > 
                                                       &arguments);
+
+    typedef void (*FunctionHandler)(Executor* executor,
+                                    ExecutionState *state,
+                                    KInstruction *target,
+                                    std::vector<ref<Expr> >
+                                    &arguments);
+
     typedef std::map<const llvm::Function*, 
                      std::pair<Handler,bool> > handlers_ty;
 
+    typedef std::map<const llvm::Function*,
+                     std::pair<FunctionHandler,bool> > uhandlers_ty;
+
     handlers_ty handlers;
+
+    /* uhandlers are user defined handlers that can be added
+       or removed during symbolic execution. */
+    uhandlers_ty uhandlers;
+
     class Executor &executor;
 
     struct HandlerInfo {
@@ -82,6 +97,9 @@ namespace klee {
     /// Initialize the internal handler map after the module has been
     /// prepared for execution.
     void bind();
+
+    /// Add user handler function
+    void addUHandler(llvm::Function* f, FunctionHandler handler);
 
     bool handle(ExecutionState &state, 
                 llvm::Function *f,

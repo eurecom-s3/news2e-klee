@@ -25,8 +25,10 @@
 
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
 #include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
 #else
 #include "llvm/Module.h"
+#include "llvm/Type.h"
 #endif
 #include "llvm/ADT/Twine.h"
 
@@ -207,6 +209,11 @@ void SpecialFunctionHandler::bind() {
   }
 }
 
+void SpecialFunctionHandler::addUHandler(llvm::Function* f, FunctionHandler h)
+{
+    uhandlers[f] = std::make_pair(h,
+                f->getReturnType()->getTypeID() != llvm::Type::VoidTyID);
+}
 
 bool SpecialFunctionHandler::handle(ExecutionState &state, 
                                     Function *f,
@@ -224,9 +231,23 @@ bool SpecialFunctionHandler::handle(ExecutionState &state,
       (this->*h)(state, target, arguments);
     }
     return true;
-  } else {
-    return false;
   }
+
+  uhandlers_ty::iterator uit = uhandlers.find(f);
+  if (uit != uhandlers.end()) {
+    FunctionHandler h = uit->second.first;
+    bool hasReturnValue = uit->second.second;
+     // FIXME: Check this... add test?
+    if (!hasReturnValue && !target->inst->use_empty()) {
+      executor.terminateStateOnExecError(state,
+                                         "expected return value from void special function");
+    } else {
+      h(&executor, &state, target, arguments);
+    }
+    return true;
+  }
+
+  return false;
 }
 
 /****/

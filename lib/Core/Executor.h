@@ -417,6 +417,16 @@ private:
   void checkMemoryUsage();
   void printDebugInstructions(ExecutionState &state);
 
+  typedef void (*FunctionHandler)(Executor* executor,
+                                  ExecutionState *state,
+                                  KInstruction *target,
+                                  std::vector<ref<Expr> >
+                                  &arguments);
+
+  /// Add a special function handler
+  void addSpecialFunctionHandler(llvm::Function* function,
+                                 FunctionHandler handler);
+                
 public:
   Executor(const InterpreterOptions &opts, InterpreterHandler *ie,
            llvm::ExecutionEngine *engine = NULL);
