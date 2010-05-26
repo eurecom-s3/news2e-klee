@@ -2469,8 +2469,7 @@ void Executor::updateStates(ExecutionState *current) {
       seedMap.find(es);
     if (it3 != seedMap.end())
       seedMap.erase(it3);
-    processTree->remove(es->ptreeNode);
-    delete es;
+    deleteState(es);
   }
   removedStates.clear();
 }
@@ -2727,6 +2726,12 @@ std::string Executor::getAddressInfo(ExecutionState &state,
   return info.str();
 }
 
+void Executor::deleteState(ExecutionState *state)
+{
+    processTree->remove(state->ptreeNode);
+    delete state;
+}
+
 void Executor::terminateState(ExecutionState &state) {
   if (replayKTest && replayPosition!=replayKTest->numObjects) {
     klee_warning_once(replayKTest,
@@ -2747,8 +2752,7 @@ void Executor::terminateState(ExecutionState &state) {
     if (it3 != seedMap.end())
       seedMap.erase(it3);
     addedStates.erase(it);
-    processTree->remove(state.ptreeNode);
-    delete &state;
+    deleteState(&state);
   }
 }
 

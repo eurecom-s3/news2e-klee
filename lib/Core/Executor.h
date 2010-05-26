@@ -369,6 +369,9 @@ private:
   const InstructionInfo & getLastNonKleeInternalInstruction(const ExecutionState &state,
       llvm::Instruction** lastInstruction);
 
+  // delete the state (called internally by terminateState and updateStates)
+  virtual void deleteState(ExecutionState *state);
+
   // remove state from queue and delete
   void terminateState(ExecutionState &state);
   // call exit handler and terminate state
