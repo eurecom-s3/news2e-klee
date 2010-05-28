@@ -372,24 +372,6 @@ private:
   // delete the state (called internally by terminateState and updateStates)
   virtual void deleteState(ExecutionState *state);
 
-  // call exit handler and terminate state
-  void terminateStateEarly(ExecutionState &state, const llvm::Twine &message);
-  // call exit handler and terminate state
-  void terminateStateOnExit(ExecutionState &state);
-  // call error handler and terminate state
-  void terminateStateOnError(ExecutionState &state, 
-                             const llvm::Twine &message,
-                             const char *suffix,
-                             const llvm::Twine &longMessage="");
-
-  // call error handler and terminate state, for execution errors
-  // (things that should not be possible, like illegal instruction or
-  // unlowered instrinsic, or are unsupported, like inline assembly)
-  void terminateStateOnExecError(ExecutionState &state, 
-                                 const llvm::Twine &message,
-                                 const llvm::Twine &info="") {
-    terminateStateOnError(state, message, "exec.err", info);
-  }
 
   /// bindModuleConstants - Initialize the module constant table.
   void bindModuleConstants();
@@ -444,6 +426,25 @@ public:
 
   // remove state from queue and delete
   void terminateState(ExecutionState &state);
+
+  // call exit handler and terminate state
+  void terminateStateEarly(ExecutionState &state, const llvm::Twine &message);
+  // call exit handler and terminate state
+  void terminateStateOnExit(ExecutionState &state);
+  // call error handler and terminate state
+  void terminateStateOnError(ExecutionState &state,
+                             const llvm::Twine &message,
+                             const char *suffix,
+                             const llvm::Twine &longMessage="");
+
+  // call error handler and terminate state, for execution errors
+  // (things that should not be possible, like illegal instruction or
+  // unlowered instrinsic, or are unsupported, like inline assembly)
+  void terminateStateOnExecError(ExecutionState &state,
+                                 const llvm::Twine &message,
+                                 const llvm::Twine &info="") {
+    terminateStateOnError(state, message, "exec.err", info);
+  }
 
 
   // XXX should just be moved out to utility module
