@@ -620,7 +620,8 @@ void Executor::initializeGlobals(ExecutionState &state) {
          e = m->global_end();
        i != e; ++i) {
     if (i->hasInitializer()) {
-      MemoryObject *mo = globalObjects.find(i)->second;
+      const MemoryObject *mo = globalObjects.find(i)->second;
+      invalidateCache(state, mo);
       const ObjectState *os = state.addressSpace.findObject(mo);
       assert(os);
       ObjectState *wos = state.addressSpace.getWriteable(mo, os);
@@ -988,10 +989,8 @@ ref<klee::ConstantExpr> Executor::evalConstant(const Constant *c) {
     } else if (const ConstantFP *cf = dyn_cast<ConstantFP>(c)) {      
       return ConstantExpr::alloc(cf->getValueAPF().bitcastToAPInt());
     } else if (const GlobalValue *gv = dyn_cast<GlobalValue>(c)) {
-        if(globalAddresses.find(gv) == globalAddresses.end()) {
-            std::cerr << "gv " << *gv << std::endl;
-            asm("int $3");
-        }
+        assert(globalAddresses.find(gv) != globalAddresses.end() 
+            && "Global address is not in the list of global addresses");
         return globalAddresses.find(gv)->second;
     } else if (isa<ConstantPointerNull>(c)) {
       return Expr::createPointer(0);
@@ -3175,6 +3174,11 @@ void Executor::resolveExact(ExecutionState &state,
   }
 }
 
+void Executor::invalidateCache(ExecutionState &state, const MemoryObject *mo)
+{
+
+}
+
 void Executor::executeMemoryOperation(ExecutionState &state,
                                       bool isWrite,
                                       ref<Expr> address,
@@ -3230,6 +3234,7 @@ void Executor::executeMemoryOperation(ExecutionState &state,
                                 "memory error: object read only",
                                 "readonly.err");
         } else {
+          invalidateCache(state, mo);
           ObjectState *wos = state.addressSpace.getWriteable(mo, os);
           if(mo->isSharedConcrete) {
               offset = toConstant(state, offset, "write to always concrete memory");
@@ -3281,6 +3286,7 @@ void Executor::executeMemoryOperation(ExecutionState &state,
                                 "memory error: object read only",
                                 "readonly.err");
         } else {
+          invalidateCache(state, mo);
           ObjectState *wos = bound->addressSpace.getWriteable(mo, os);
           ref<Expr> offset = mo->getOffsetExpr(address);
           if(mo->isSharedConcrete) {
@@ -3629,6 +3635,7 @@ void Executor::doImpliedValueConcretization(ExecutionState &state,
       } else {
         assert(!os->readOnly && 
                "not possible? read only object with static read?");
+        invalidateCache(state, mo);
         ObjectState *wos = state.addressSpace.getWriteable(mo, os);
         wos->write(CE, it->second);
       }
