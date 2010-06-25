@@ -989,9 +989,11 @@ ref<klee::ConstantExpr> Executor::evalConstant(const Constant *c) {
     } else if (const ConstantFP *cf = dyn_cast<ConstantFP>(c)) {      
       return ConstantExpr::alloc(cf->getValueAPF().bitcastToAPInt());
     } else if (const GlobalValue *gv = dyn_cast<GlobalValue>(c)) {
-        assert(globalAddresses.find(gv) != globalAddresses.end() 
+        std::map<const llvm::GlobalValue*, ref<ConstantExpr> >::iterator
+                it = globalAddresses.find(gv);
+        assert(it != globalAddresses.end() 
             && "Global address is not in the list of global addresses");
-        return globalAddresses.find(gv)->second;
+        return it->second;
     } else if (isa<ConstantPointerNull>(c)) {
       return Expr::createPointer(0);
     } else if (isa<UndefValue>(c) || isa<ConstantAggregateZero>(c)) {
