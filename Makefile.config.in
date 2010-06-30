@@ -82,3 +82,8 @@ CXXFLAGS := @CXXFLAGS@ -g -Wall
 LDFLAGS := @LDFLAGS@ -g
 
 REQUIRES_RTTI := @REQUIRES_RTTI@
+
+# Enable exceptions
+ifeq (@REQUIRES_EH@,1)
+    REQUIRES_EH := 1
+endif

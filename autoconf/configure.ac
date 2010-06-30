@@ -822,6 +822,23 @@ if test "X$ENABLE_STP$ENABLE_Z3$ENABLE_METASMT" == X000 ; then
 fi
 
 
+
+dnl **************************************************************************
+dnl User option to enable exceptions in KLEE
+dnl **************************************************************************
+
+AC_ARG_ENABLE(exceptions,
+              AS_HELP_STRING([--enable-exceptions],
+                             [Compile with exceptions support [[disabled]]]),
+                             ,enableval=no)
+if test ${enableval} = "yes" ; then
+  AC_SUBST(REQUIRES_EH,[[1]])
+else
+  AC_SUBST(REQUIRES_EH,[[0]])
+fi
+
+
+
 dnl **************************************************************************
 dnl * Create the output files
 dnl **************************************************************************

@@ -624,6 +624,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+REQUIRES_EH
 METASMT_DEFAULT_BACKEND
 ENABLE_METASMT
 METASMT_ROOT
@@ -741,6 +742,7 @@ with_stp
 with_z3
 with_metasmt
 with_metasmt_default_backend
+enable_exceptions
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1371,6 +1373,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-cxx11          Build using C++11
   --enable-posix-runtime  Enable the POSIX runtime
+  --enable-exceptions     Compile with exceptions support [[disabled]]
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -5443,6 +5446,25 @@ fi
 if test "X$ENABLE_STP$ENABLE_Z3$ENABLE_METASMT" == X000 ; then
     as_fn_error $? "At least one solver backend must be enabled, try using --with-stp, --with-z3 or --with-metasmt" "$LINENO" 5
 fi
+
+
+
+
+# Check whether --enable-exceptions was given.
+if test "${enable_exceptions+set}" = set; then :
+  enableval=$enable_exceptions;
+else
+  enableval=no
+fi
+
+if test ${enableval} = "yes" ; then
+  REQUIRES_EH=1
+
+else
+  REQUIRES_EH=0
+
+fi
+
 
 
 
