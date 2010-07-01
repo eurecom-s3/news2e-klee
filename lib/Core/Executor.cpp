@@ -291,8 +291,12 @@ namespace {
   MaxMemoryInhibit("max-memory-inhibit",
             cl::desc("Inhibit forking at memory cap (vs. random terminate) (default=on)"),
             cl::init(true));
-}
 
+  cl::opt<bool>
+  IgnoreAlwaysConcrete("ignore-always-concrete",
+            cl::desc("Do not add constraints when writing to always concrete memory"),
+            cl::init(false));
+}
 
 namespace klee {
   RNG theRNG;
@@ -1125,6 +1129,21 @@ Executor::toConstant(ExecutionState &state,
 
   addConstraint(state, EqExpr::create(e, value));
     
+  return value;
+}
+
+ref<klee::ConstantExpr>
+Executor::toConstantSilent(ExecutionState &state,
+                     ref<Expr> e) {
+  e = state.constraints.simplifyExpr(e);
+  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(e))
+    return CE;
+
+  ref<ConstantExpr> value;
+  bool success = solver->getValue(state, e, value);
+  assert(success && "FIXME: Unhandled solver failure");
+  (void) success;
+
   return value;
 }
 
@@ -3243,14 +3262,23 @@ void Executor::executeMemoryOperation(ExecutionState &state,
           invalidateCache(state, mo);
           ObjectState *wos = state.addressSpace.getWriteable(mo, os);
           if(mo->isSharedConcrete) {
-              offset = toConstant(state, offset, "write to always concrete memory");
-              value  = toConstant(state,  value, "write to always concrete memory");
+              if(IgnoreAlwaysConcrete) {
+                  offset = toConstantSilent(state, offset);
+                  value  = toConstantSilent(state,  value);
+              } else {
+                  offset = toConstant(state, offset, "write to always concrete memory");
+                  value  = toConstant(state,  value, "write to always concrete memory");
+              }
           }
           wos->write(offset, value);
         }          
       } else {
         if(mo->isSharedConcrete) {
-            offset = toConstant(state, offset, "read from always concrete memory");
+            if(IgnoreAlwaysConcrete) {
+                offset = toConstantSilent(state, offset);
+            } else {
+                offset = toConstant(state, offset, "read from always concrete memory");
+            }
         }
         ref<Expr> result = os->read(offset, type);
         
@@ -3296,15 +3324,24 @@ void Executor::executeMemoryOperation(ExecutionState &state,
           ObjectState *wos = bound->addressSpace.getWriteable(mo, os);
           ref<Expr> offset = mo->getOffsetExpr(address);
           if(mo->isSharedConcrete) {
-              offset = toConstant(state, offset, "write to always concrete memory");
-              value  = toConstant(state,  value, "write to always concrete memory");
+              if(IgnoreAlwaysConcrete) {
+                  offset = toConstantSilent(state, offset);
+                  value  = toConstantSilent(state,  value);
+              } else {
+                  offset = toConstant(state, offset, "write to always concrete memory");
+                  value  = toConstant(state,  value, "write to always concrete memory");
+              }
           }
           wos->write(offset, value);
         }
       } else {
         ref<Expr> offset = mo->getOffsetExpr(address);
         if(mo->isSharedConcrete) {
-            offset = toConstant(state, offset, "read from always concrete memory");
+            if(IgnoreAlwaysConcrete) {
+                offset = toConstantSilent(state, offset);
+            } else {
+                offset = toConstant(state, offset, "read from always concrete memory");
+            }
         }
         ref<Expr> result = os->read(offset, type);
         bindLocal(target, *bound, result);
