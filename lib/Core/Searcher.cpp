@@ -523,10 +523,9 @@ ExecutionState &BatchingSearcher::selectState() {
     lastState = &baseSearcher->selectState();
     lastStartTime = util::getWallTime();
     lastStartInstructions = stats::instructions;
-    return *lastState;
-  } else {
-    return *lastState;
   }
+
+  return *lastState;
 }
 
 void BatchingSearcher::update(ExecutionState *current,
