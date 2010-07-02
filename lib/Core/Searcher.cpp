@@ -512,14 +512,17 @@ ExecutionState &BatchingSearcher::selectState() {
   if (!lastState || 
       (util::getWallTime()-lastStartTime)>timeBudget ||
       (stats::instructions-lastStartInstructions)>instructionBudget) {
-    if (lastState) {
-      double delta = util::getWallTime()-lastStartTime;
-      if (delta>timeBudget*1.1) {
-        llvm::errs() << "KLEE: increased time budget from " << timeBudget
-                     << " to " << delta << "\n";
-        timeBudget = delta;
-      }
-    }
+    
+//XXX: Do not increase time budget in S2E    
+//    if (lastState) {
+//      double delta = util::getWallTime()-lastStartTime;
+//      if (delta>timeBudget*1.1) {
+//        llvm::errs() << "KLEE: increased time budget from " << timeBudget
+//                     << " to " << delta << "\n";
+//        timeBudget = delta;
+//      }
+//    }
+    
     lastState = &baseSearcher->selectState();
     lastStartTime = util::getWallTime();
     lastStartInstructions = stats::instructions;
