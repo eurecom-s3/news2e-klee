@@ -73,6 +73,7 @@ namespace klee {
   class StatsTracker;
   class TimingSolver;
   class TreeStreamWriter;
+  class BitfieldSimplifier;
   template<class T> class ref;
 
 
@@ -199,7 +200,10 @@ private:
 
   llvm::Function* getTargetFunction(llvm::Value *calledVal,
                                     ExecutionState &state);
-  
+
+  /// Simplifier user to simplify expressions when adding them
+  BitfieldSimplifier *exprSimplifier;
+
   void executeInstruction(ExecutionState &state, KInstruction *ki);
 
   void printFileLine(ExecutionState &state, KInstruction *ki,
@@ -422,6 +426,8 @@ private:
 
   //Invalidate object cache
   virtual void invalidateCache(ExecutionState &state, const MemoryObject *mo);
+
+  ref<Expr> simplifyExpr(ref<Expr> e);
 
 public:
   Executor(const InterpreterOptions &opts, InterpreterHandler *ie,

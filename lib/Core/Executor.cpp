@@ -22,6 +22,7 @@
 #include "TimingSolver.h"
 #include "UserSearcher.h"
 #include "ExecutorTimerInfo.h"
+#include "../Expr/BitfieldSimplifier.h"
 
 #include "klee/ExecutionState.h"
 #include "klee/Expr.h"
@@ -295,6 +296,11 @@ namespace {
   IgnoreAlwaysConcrete("ignore-always-concrete",
             cl::desc("Do not add constraints when writing to always concrete memory"),
             cl::init(false));
+
+  cl::opt<bool>
+  UseExprSimplifier("use-expr-simplifier",
+            cl::desc("Apply expression simplifier for new expressions"),
+            cl::init(true));
 }
 
 namespace klee {
@@ -398,6 +404,14 @@ Executor::~Executor() {
 }
 
 /***/
+
+inline ref<Expr> Executor::simplifyExpr(ref<Expr> e)
+{
+    if(exprSimplifier)
+        return exprSimplifier->simplify(e);
+    else
+        return e;
+}
 
 void Executor::initializeGlobalObject(ExecutionState &state, ObjectState *os,
                                       const Constant *c, 
@@ -691,7 +705,8 @@ void Executor::branch(ExecutionState &state,
       for (i=0; i<N; ++i) {
         ref<ConstantExpr> res;
         bool success = 
-          solver->getValue(state, siit->assignment.evaluate(conditions[i]), 
+          solver->getValue(state, siit->assignment.evaluate(
+                                        simplifyExpr(conditions[i])),
                            res);
         assert(success && "FIXME: Unhandled solver failure");
         (void) success;
@@ -726,6 +741,8 @@ void Executor::branch(ExecutionState &state,
 
 Executor::StatePair 
 Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
+  condition = simplifyExpr(condition);
+
   Solver::Validity res;
   std::map< ExecutionState*, std::vector<SeedInfo> >::iterator it = 
     seedMap.find(&current);
@@ -953,6 +970,7 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
 }
 
 void Executor::addConstraint(ExecutionState &state, ref<Expr> condition) {
+  condition = simplifyExpr(condition);
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(condition)) {
     if (!CE->isTrue())
       llvm::report_fatal_error("attempt to add invalid constraint");
@@ -1072,16 +1090,17 @@ const Cell& Executor::eval(KInstruction *ki, unsigned index,
 
 void Executor::bindLocal(KInstruction *target, ExecutionState &state, 
                          ref<Expr> value) {
-  getDestCell(state, target).value = value;
+  getDestCell(state, target).value = simplifyExpr(value);
 }
 
 void Executor::bindArgument(KFunction *kf, unsigned index, 
                             ExecutionState &state, ref<Expr> value) {
-  getArgumentCell(state, kf, index).value = value;
+  getArgumentCell(state, kf, index).value = simplifyExpr(value);
 }
 
 ref<Expr> Executor::toUnique(const ExecutionState &state, 
                              ref<Expr> &e) {
+  e = simplifyExpr(e);
   ref<Expr> result = e;
 
   if (!isa<ConstantExpr>(e)) {
@@ -1090,7 +1109,8 @@ ref<Expr> Executor::toUnique(const ExecutionState &state,
 
     solver->setTimeout(coreSolverTimeout);      
     if (solver->getValue(state, e, value) &&
-        solver->mustBeTrue(state, EqExpr::create(e, value), isTrue) &&
+        solver->mustBeTrue(state,
+                simplifyExpr(EqExpr::create(e, value)), isTrue) &&
         isTrue)
       result = value;
     solver->setTimeout(0);
@@ -1106,6 +1126,7 @@ ref<klee::ConstantExpr>
 Executor::toConstant(ExecutionState &state, 
                      ref<Expr> e,
                      const char *reason) {
+  e = simplifyExpr(e);
   e = state.constraints.simplifyExpr(e);
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(e))
     return CE;
@@ -1611,7 +1632,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     ref<Expr> cond = eval(ki, 0, state).value;
     BasicBlock *bb = si->getParent();
 
-    cond = toUnique(state, cond);
+    cond = simplifyExpr(toUnique(state, cond));
     if (ConstantExpr *CE = dyn_cast<ConstantExpr>(cond)) {
       // Somewhat gross to create these all the time, but fine till we
       // switch to an internal rep.
@@ -1636,7 +1657,8 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
         ref<Expr> value = evalConstant(si->getCaseValue(i));
 #endif
         ref<Expr> match = EqExpr::create(cond, value);
-        isDefault = AndExpr::create(isDefault, Expr::createIsZero(match));
+        isDefault = simplifyExpr(AndExpr::create(isDefault,
+                                    Expr::createIsZero(match)));
         bool result;
         bool success = solver->mayBeTrue(state, match, result);
         assert(success && "FIXME: Unhandled solver failure");
@@ -3170,6 +3192,7 @@ void Executor::resolveExact(ExecutionState &state,
                             ref<Expr> p,
                             ExactResolutionList &results, 
                             const std::string &name) {
+  p = simplifyExpr(p);
   // XXX we may want to be capping this?
   ResolutionList rl;
   state.addressSpace.resolve(state, solver, p, rl);
