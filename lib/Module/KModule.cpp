@@ -373,7 +373,17 @@ void KModule::prepare(const Interpreter::ModuleOptions &opts,
   pm3.add(new IntrinsicCleanerPass(*targetData));
   pm3.add(new PhiCleanerPass());
   pm3.run(*module);
+
+  if (opts.CustomPasses) {
+      for(Module::iterator itr = module->begin(), end = module->end(); 
+          itr != end; ++itr) 
+      {
+          opts.CustomPasses->run(*itr);
+      }
+  }
+
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 3)
+
   // For cleanliness see if we can discard any of the functions we
   // forced to import.
   Function *f;

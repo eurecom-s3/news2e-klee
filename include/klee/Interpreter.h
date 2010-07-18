@@ -21,6 +21,7 @@ class Function;
 class Module;
 class raw_ostream;
 class raw_fd_ostream;
+class FunctionPassManager;
 }
 
 namespace klee {
@@ -54,12 +55,15 @@ public:
     bool Optimize;
     bool CheckDivZero;
     bool CheckOvershift;
+    llvm::FunctionPassManager *CustomPasses;
 
     ModuleOptions(const std::string& _LibraryDir, 
                   bool _Optimize, bool _CheckDivZero,
-                  bool _CheckOvershift)
+                  bool _CheckOvershift,
+                  llvm::FunctionPassManager *_CustomPasses = NULL)
       : LibraryDir(_LibraryDir), Optimize(_Optimize), 
-        CheckDivZero(_CheckDivZero), CheckOvershift(_CheckOvershift) {}
+        CheckDivZero(_CheckDivZero), CheckOvershift(_CheckOvershift),
+        CustomPasses(_CustomPasses) {}
   };
 
   enum LogType
