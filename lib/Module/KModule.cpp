@@ -371,7 +371,7 @@ void KModule::prepare(const Interpreter::ModuleOptions &opts,
   default: klee_error("invalid --switch-type");
   }
   pm3.add(new IntrinsicCleanerPass(*targetData));
-  pm3.add(new PhiCleanerPass());
+  //pm3.add(new PhiCleanerPass());
   pm3.run(*module);
 
   if (opts.CustomPasses) {
@@ -382,6 +382,11 @@ void KModule::prepare(const Interpreter::ModuleOptions &opts,
       }
   }
 
+  //The PhiCleaner is important to be the last, because the rest of KLEE
+  //makes assumptions about how PHI nodes are placed.
+  PassManager pm4;
+  pm4.add(new PhiCleanerPass());
+  pm4.run(*module);
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 3)
 
   // For cleanliness see if we can discard any of the functions we
