@@ -305,7 +305,7 @@ namespace {
   cl::opt<bool>
   ValidateSimplifier("validate-expr-simplifier",
             cl::desc("Checks that the simplification algorithm produced correct expressions"),
-            cl::init(true));
+            cl::init(false));
 }
 
 namespace klee {
@@ -419,13 +419,7 @@ ref<Expr> Executor::simplifyExpr(const ExecutionState &s, ref<Expr> e)
             bool isEqual;
             ref<Expr> eq = EqExpr::create(simplified, e);
             assert(solver->mustBeTrue(s, eq, isEqual));
-            if(!isEqual) {
-                std::cerr << "Error in expression simplifier:" << std::endl;
-                e->dump();
-                std::cerr << "!=" << std::endl;
-                simplified->dump();
-                assert(false);
-            }
+            assert(isEqual && "Original and simplified expression must be equal");
         }
 
         return simplified;
@@ -1856,7 +1850,18 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
 
     // Special instructions
   case Instruction::Select: {
-    assert(false && "Select instructions don't work with S2E");
+    llvm::errs() << __FILE__ << ":" << __LINE__ 
+                 << ": Warning: Encountered select instruction, "
+                 << "which is unsupported in S2E" << '\n';
+
+    SelectInst *SI = cast<SelectInst>(ki->inst);
+    assert(SI->getCondition() == SI->getOperand(0) &&
+           "Wrong operand index!");
+    ref<Expr> cond = eval(ki, 0, state).value;
+    ref<Expr> tExpr = eval(ki, 1, state).value;
+    ref<Expr> fExpr = eval(ki, 2, state).value;
+    ref<Expr> result = SelectExpr::create(cond, tExpr, fExpr);
+    bindLocal(ki, state, result);
     break;
   }
 
