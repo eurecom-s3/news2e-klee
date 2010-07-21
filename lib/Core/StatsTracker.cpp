@@ -228,7 +228,10 @@ StatsTracker::StatsTracker(Executor &_executor, std::string _objectFilename,
       }
     }
   }
+}
 
+void StatsTracker::writeHeaders()
+{
   if (OutputStats) {
     statsFile = executor.interpreterHandler->openOutputFile("run.stats");
     assert(statsFile && "unable to open statistics trace file");

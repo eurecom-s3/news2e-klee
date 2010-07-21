@@ -358,7 +358,8 @@ Executor::Executor(const InterpreterOptions &opts, InterpreterHandler *ih, Execu
 
 
 const Module *Executor::setModule(llvm::Module *module, 
-                                  const ModuleOptions &opts) {
+                                  const ModuleOptions &opts,
+                                  bool createStatsTracker) {
   assert(!kmodule && module && "can only register one module"); // XXX gross
   
   kmodule = new KModule(module);
@@ -378,11 +379,12 @@ const Module *Executor::setModule(llvm::Module *module,
   kmodule->prepare(opts, interpreterHandler);
   specialFunctionHandler->bind();
 
-  if (StatsTracker::useStatistics()) {
+  if (createStatsTracker && StatsTracker::useStatistics()) {
     statsTracker = 
       new StatsTracker(*this,
                        interpreterHandler->getOutputFilename("assembly.ll"),
                        userSearcherRequiresMD2U());
+    statsTracker->writeHeaders();
   }
   
   return module;

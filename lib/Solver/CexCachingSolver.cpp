@@ -19,7 +19,6 @@
 #include "klee/Internal/ADT/MapOfSets.h"
 
 #include "klee/SolverStats.h"
-
 #include "klee/Internal/Support/ErrorHandling.h"
 
 #include "llvm/Support/CommandLine.h"

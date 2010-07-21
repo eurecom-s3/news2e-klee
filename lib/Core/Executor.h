@@ -489,7 +489,8 @@ public:
   }
 
   virtual const llvm::Module *
-  setModule(llvm::Module *module, const ModuleOptions &opts);
+  setModule(llvm::Module *module, const ModuleOptions &opts,
+            bool createStatsTracker = true);
 
   virtual void useSeeds(const std::vector<struct KTest *> *seeds) { 
     usingSeeds = seeds;
@@ -534,6 +535,8 @@ public:
   virtual void copyOutConcretes(ExecutionState &state);
 
   virtual bool copyInConcretes(ExecutionState &state);
+
+  size_t getStatesCount() { return states.size(); }
 };
   
 } // End klee namespace
