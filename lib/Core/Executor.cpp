@@ -308,6 +308,9 @@ namespace {
             cl::init(false));
 }
 
+unsigned Executor::getMaxMemory() { return MaxMemory; }
+bool Executor::getMaxMemoryInhibit() { return MaxMemoryInhibit; }
+
 namespace klee {
   RNG theRNG;
 }

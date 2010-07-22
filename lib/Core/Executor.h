@@ -433,6 +433,9 @@ private:
 
   ref<Expr> simplifyExpr(const ExecutionState &state, ref<Expr> e);
 
+  static unsigned getMaxMemory();
+  static bool getMaxMemoryInhibit();
+
 public:
   Executor(const InterpreterOptions &opts, InterpreterHandler *ie,
            llvm::ExecutionEngine *engine = NULL);
