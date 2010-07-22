@@ -379,7 +379,7 @@ void StatsTracker::writeStatsHeader() {
              << "'NumBranches',"
              << "'UserTime',"
              << "'NumStates',"
-             << "'MallocUsage',"
+             << "'MemoryUsage',"
              << "'NumQueries',"
              << "'NumQueryConstructs',"
              << "'NumObjects',"
