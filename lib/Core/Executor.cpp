@@ -662,11 +662,12 @@ void Executor::initializeGlobals(ExecutionState &state) {
        i != e; ++i) {
     if (i->hasInitializer()) {
       const MemoryObject *mo = globalObjects.find(i)->second;
-      invalidateCache(state, mo);
       const ObjectState *os = state.addressSpace.findObject(mo);
       assert(os);
       ObjectState *wos = state.addressSpace.getWriteable(mo, os);
       
+      invalidateCache(state, os, wos);
+
       initializeGlobalObject(state, wos, i->getInitializer(), 0);
       // if(i->isConstant()) os->setReadOnly(true);
     }
@@ -3250,9 +3251,9 @@ void Executor::resolveExact(ExecutionState &state,
   }
 }
 
-void Executor::invalidateCache(ExecutionState &state, const MemoryObject *mo)
+void Executor::invalidateCache(ExecutionState &state, const ObjectState *os, ObjectState *wos)
 {
-
+assert(false);
 }
 
 void Executor::executeMemoryOperation(ExecutionState &state,
@@ -3310,8 +3311,8 @@ void Executor::executeMemoryOperation(ExecutionState &state,
                                 "memory error: object read only",
                                 "readonly.err");
         } else {
-          invalidateCache(state, mo);
           ObjectState *wos = state.addressSpace.getWriteable(mo, os);
+          invalidateCache(state, os, wos);
           if(mo->isSharedConcrete) {
               if(IgnoreAlwaysConcrete) {
                   offset = toConstantSilent(state, offset);
@@ -3371,8 +3372,8 @@ void Executor::executeMemoryOperation(ExecutionState &state,
                                 "memory error: object read only",
                                 "readonly.err");
         } else {
-          invalidateCache(state, mo);
           ObjectState *wos = bound->addressSpace.getWriteable(mo, os);
+          invalidateCache(state, os, wos);
           ref<Expr> offset = mo->getOffsetExpr(address);
           if(mo->isSharedConcrete) {
               if(IgnoreAlwaysConcrete) {
@@ -3729,8 +3730,8 @@ void Executor::doImpliedValueConcretization(ExecutionState &state,
       } else {
         assert(!os->readOnly && 
                "not possible? read only object with static read?");
-        invalidateCache(state, mo);
         ObjectState *wos = state.addressSpace.getWriteable(mo, os);
+        invalidateCache(state, os, wos);
         wos->write(CE, it->second);
       }
     }
