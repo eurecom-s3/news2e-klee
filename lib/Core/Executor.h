@@ -540,6 +540,10 @@ public:
   virtual bool copyInConcretes(ExecutionState &state);
 
   size_t getStatesCount() { return states.size(); }
+
+  const std::set<ExecutionState*> &getStates() {
+    return states;
+  }
 };
   
 } // End klee namespace
