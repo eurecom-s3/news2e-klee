@@ -2981,9 +2981,29 @@ void Executor::callExternalFunction(ExecutionState &state,
         ce->toMemory(&args[wordIndex]);
         wordIndex += (ce->getWidth()+63)/64;
       } else {
-        terminateStateOnExecError(state,
-                                  "external call with symbolic argument: " +
-                                  function->getName());
+        std::string str;
+        llvm::raw_string_ostream os(str);
+        os << "external call with symbolic argument " 
+           << (ai - arguments.begin()) << ": "
+           << function->getName() << " (";
+        bool firstIteration = true;
+        for (std::vector< ref< Expr > >::iterator ai1 = arguments.begin(),
+                                                  ae1 = arguments.end();
+             ai1 != ae1; 
+             ++ai1) 
+        {
+            if (!firstIteration) {
+                os << ", ";
+            }
+            os << "arg" << (ai1 - arguments.begin()) << " = "
+               << *ai1;
+            firstIteration = false;
+        }
+
+        os << ")";
+        os.flush();
+        terminateStateOnExecError(state, str);
+        return;
       }
     }
   }
@@ -2996,9 +3016,10 @@ void Executor::callExternalFunction(ExecutionState &state,
     llvm::raw_string_ostream os(TmpStr);
     os << "calling external: " << function->getName().str() << "(";
     for (unsigned i=0; i<arguments.size(); i++) {
-      os << arguments[i];
-      if (i != arguments.size()-1)
-	os << ", ";
+        os << arguments[i];
+      if (i != arguments.size()-1) {
+	    os << ", ";
+      }
     }
     os << ")";
     
