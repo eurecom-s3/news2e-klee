@@ -116,12 +116,6 @@ ObjectState::ObjectState(const MemoryObject *mo)
         getArrayCache()->CreateArray("tmp_arr" + llvm::utostr(++id), size);
     updates = UpdateList(array, 0);
   }
-  if (object->isSharedConcrete) {
-    actualStore = (uint8_t*)object->address;
-  }else {
-    actualStore = concreteStore;
-    memset(concreteStore, 0, size);
-  }
 }
 
 
@@ -138,12 +132,6 @@ ObjectState::ObjectState(const MemoryObject *mo, const Array *array)
     updates(array, 0) {
   mo->refCount++;
   makeSymbolic();
-  if (object->isSharedConcrete) {
-    actualStore = (uint8_t*)object->address;
-  }else {
-    actualStore = concreteStore;
-    memset(concreteStore, 0, size);
-  }
 }
 
 ObjectState::ObjectState(const ObjectState &os) 
@@ -169,12 +157,6 @@ ObjectState::ObjectState(const ObjectState &os)
   }
 
   memcpy(concreteStore, os.concreteStore, size*sizeof(*concreteStore));
-  if (object->isSharedConcrete) {
-    actualStore = (uint8_t*)object->address;
-  }else {
-    actualStore = concreteStore;
-  }
-
 }
 
 ObjectState::~ObjectState() {
