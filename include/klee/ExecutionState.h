@@ -63,6 +63,8 @@ struct StackFrame {
 
 /// @brief ExecutionState representing a path under exploration
 class ExecutionState {
+  friend class AddressSpace;
+
 public:
   typedef std::vector<StackFrame> stack_ty;
 
@@ -146,10 +148,13 @@ public:
   void removeFnAlias(std::string fn);
 
 private:
-  ExecutionState() : ptreeNode(0) {}
+  ExecutionState() : addressSpace(this), ptreeNode(0) {}
 
 protected:
   virtual ExecutionState* clone();
+  virtual void addressSpaceChange(const MemoryObject *mo,
+                                  const ObjectState *oldState,
+                                  ObjectState *newState);
 
 public:
   ExecutionState(KFunction *kf);
