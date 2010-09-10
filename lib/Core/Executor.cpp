@@ -102,6 +102,7 @@
 
 #include <errno.h>
 #include <cxxabi.h>
+#include <inttypes.h>
 
 using namespace llvm;
 using namespace klee;
@@ -125,6 +126,10 @@ namespace {
   AllowExternalSymCalls("allow-external-sym-calls",
                         cl::init(false),
 			cl::desc("Allow calls with symbolic arguments to external functions.  This concretizes the symbolic arguments.  (default=off)"));
+
+    cl::opt<bool> 
+    UseAsmAddresses("use-asm-addresses",
+                    cl::init(false));
 
   /// The different query logging solvers that can switched on/off
   enum PrintDebugInstructionsType {
@@ -636,9 +641,28 @@ void Executor::initializeGlobals(ExecutionState &state) {
     } else {
       LLVM_TYPE_Q Type *ty = i->getType()->getElementType();
       uint64_t size = kmodule->targetData->getTypeStoreSize(ty);
-      MemoryObject *mo = memory->allocate(size, false, true, &*i);
-      if (!mo)
+      //TODO: This looks like a terrible hack for S2E
+      MemoryObject *mo = 0;
+
+      if (UseAsmAddresses && i->getName()[0]=='\01') {
+        char *end;
+        uint64_t address = ::strtoll(i->getName().data()+1, &end, 0);
+
+        if (end && *end == '\0') {
+          klee_message("NOTE: allocated global at asm specified address: %#08"
+                       PRIx64 " (%" PRIu64 " bytes)",
+                       address, size);
+          mo = memory->allocateFixed(address, size, &*i);
+          mo->isUserSpecified = true; // XXX hack;
+        }
+      }
+
+      if (!mo) {
+        mo = memory->allocate(size, false, true, &*i);
+      }
+      if (!mo) {
         llvm::report_fatal_error("out of memory");
+      }
       ObjectState *os = bindObjectInState(state, mo, false);
       globalObjects.insert(std::make_pair(i, mo));
       globalAddresses.insert(std::make_pair(i, mo->getBaseExpr()));
