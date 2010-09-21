@@ -297,10 +297,13 @@ namespace {
             cl::desc("Inhibit forking at memory cap (vs. random terminate) (default=on)"),
             cl::init(true));
 
+
+  /*
   cl::opt<bool>
   IgnoreAlwaysConcrete("ignore-always-concrete",
             cl::desc("Do not add constraints when writing to always concrete memory"),
             cl::init(false));
+  */
 
   cl::opt<bool>
   UseExprSimplifier("use-expr-simplifier",
@@ -495,11 +498,13 @@ MemoryObject * Executor::addExternalObject(ExecutionState &state,
                                            void *addr, unsigned size, 
                                            bool isReadOnly,
                                            bool isUserSpecified,
-                                           bool isSharedConcrete) {
+                                           bool isSharedConcrete,
+                                           bool isValueIgnored) {
   MemoryObject *mo = memory->allocateFixed((uint64_t) addr,
                                            size, 0);
   mo->isUserSpecified = isUserSpecified;
   mo->isSharedConcrete = isSharedConcrete;
+  mo->isValueIgnored = isValueIgnored;
   ObjectState *os = bindObjectInState(state, mo, false);
   if(!isSharedConcrete) {
     memcpy(os->getConcreteStore(), addr, size);
@@ -1010,6 +1015,11 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
 
     return StatePair(trueState, falseState);
   }
+}
+
+bool Executor::merge(ExecutionState &base, ExecutionState &other)
+{
+    return base.merge(other);
 }
 
 void Executor::addConstraint(ExecutionState &state, ref<Expr> condition) {
@@ -3350,7 +3360,7 @@ void Executor::executeMemoryOperation(ExecutionState &state,
         } else {
           ObjectState *wos = state.addressSpace.getWriteable(mo, os);
           if(mo->isSharedConcrete) {
-              if(IgnoreAlwaysConcrete) {
+              if(mo->isValueIgnored) {
                   offset = toConstantSilent(state, offset);
                   value  = toConstantSilent(state,  value);
               } else {
@@ -3362,7 +3372,7 @@ void Executor::executeMemoryOperation(ExecutionState &state,
         }          
       } else {
         if(mo->isSharedConcrete) {
-            if(IgnoreAlwaysConcrete) {
+            if(mo->isValueIgnored) {
                 offset = toConstantSilent(state, offset);
             } else {
                 offset = toConstant(state, offset, "read from always concrete memory");
@@ -3411,7 +3421,7 @@ void Executor::executeMemoryOperation(ExecutionState &state,
           ObjectState *wos = bound->addressSpace.getWriteable(mo, os);
           ref<Expr> offset = mo->getOffsetExpr(address);
           if(mo->isSharedConcrete) {
-              if(IgnoreAlwaysConcrete) {
+              if(mo->isValueIgnored) {
                   offset = toConstantSilent(state, offset);
                   value  = toConstantSilent(state,  value);
               } else {
@@ -3424,7 +3434,7 @@ void Executor::executeMemoryOperation(ExecutionState &state,
       } else {
         ref<Expr> offset = mo->getOffsetExpr(address);
         if(mo->isSharedConcrete) {
-            if(IgnoreAlwaysConcrete) {
+            if(mo->isValueIgnored) {
                 offset = toConstantSilent(state, offset);
             } else {
                 offset = toConstant(state, offset, "read from always concrete memory");
