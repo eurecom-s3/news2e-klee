@@ -101,6 +101,110 @@ namespace {
                               cl::desc("Print functions whose address is taken."));
 }
 
+namespace llvm {
+extern void CreateOptimizePasses(PassManagerBase&, Module*);
+}
+
+namespace klee {
+
+class KModulePrivate {
+  llvm::FunctionPassManager fpmOptimize, fpm3, fpm4;
+
+  bool optimize;
+
+public:
+
+  KModulePrivate(llvm::Module *module,
+                 llvm::DataLayout *dataLayout)
+          : fpmOptimize(module),
+            fpm3(module),
+            fpm4(module),
+            optimize(false) 
+  {
+    // Finally, run the passes that maintain invariants we expect during
+    // interpretation. We run the intrinsic cleaner just in case we
+    // linked in something with intrinsics but any external calls are
+    // going to be unresolved. We really need to handle the intrinsics
+    // directly I think?
+    fpm3.add(createCFGSimplificationPass());
+
+    switch(SwitchType) {
+      case eSwitchTypeInternal: 
+        break;
+      case eSwitchTypeSimple:
+        fpm3.add(new LowerSwitchPass());
+        break;
+      case eSwitchTypeLLVM:
+        fpm3.add(createLowerSwitchPass()); 
+        break;
+      default: 
+        klee_error("invalid --switch-type");
+    }
+    fpm3.add(new IntrinsicFunctionCleanerPass());
+
+    //The PhiCleaner is important to be the last, because the rest of KLEE
+    //makes assumptions about how PHI nodes are placed.
+    fpm4.add(new PhiCleanerPass());
+
+    CreateOptimizePasses(fpmOptimize, module);
+    fpmOptimize.doInitialization();
+  }
+
+  void runPM3(llvm::Function& f) {
+      fpm3.run(f);
+  }
+
+  void runPM3(llvm::Module& mod) {
+      for (llvm::Module::iterator itr = mod.begin(), end = mod.end();
+           itr != end;
+           ++itr) 
+      {
+          runPM3(*itr);
+      }
+  }
+
+  void runPM4(llvm::Function& f) {
+      fpm4.run(f);
+  }
+
+  void runPM4(llvm::Module& mod) {
+      for (llvm::Module::iterator itr = mod.begin(), end = mod.end();
+           itr != end;
+           ++itr) 
+      {
+          runPM4(*itr);
+      }
+  }
+
+  void runOptimize(llvm::Function& f) {
+    if (optimize) {
+        fpmOptimize.run(f);
+    }
+  }
+
+  void runOptimize(llvm::Module& mod) {
+      if (!optimize) {
+          return;
+      }
+
+      for (llvm::Module::iterator itr = mod.begin(), end = mod.end();
+           itr != end;
+           ++itr) 
+      {
+          runOptimize(*itr);
+      }
+  }
+
+  void setOptimize(bool state) {
+      optimize = state;
+  }
+
+  ~KModulePrivate() {
+  }
+};
+
+} // namespace klee
+
 KModule::KModule(Module *_module) 
   : module(_module),
 #if LLVM_VERSION_CODE <= LLVM_VERSION(3, 1)
@@ -109,7 +213,8 @@ KModule::KModule(Module *_module)
     targetData(new DataLayout(module)),
 #endif
     kleeMergeFn(0),
-    infos(0) {
+    infos(0),
+    p(new KModulePrivate(_module, targetData)) {
 }
 
 KModule::~KModule() {
@@ -125,12 +230,8 @@ KModule::~KModule() {
 
   delete targetData;
   delete module;
-}
 
-/***/
-
-namespace llvm {
-extern void Optimize(Module*);
+  delete p;
 }
 
 // what a hack
@@ -305,8 +406,9 @@ void KModule::prepare(const Interpreter::ModuleOptions &opts,
   pm.add(new IntrinsicCleanerPass(*targetData, false));
   pm.run(*module);
 
-  if (opts.Optimize)
-    Optimize(module);
+  p->setOptimize(opts.Optimize);
+  p->runOptimize(*module); 
+
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 3)
   // Force importing functions required by intrinsic lowering. Kind of
   // unfortunate clutter when we don't need them but we won't know
@@ -362,17 +464,10 @@ void KModule::prepare(const Interpreter::ModuleOptions &opts,
   // linked in something with intrinsics but any external calls are
   // going to be unresolved. We really need to handle the intrinsics
   // directly I think?
-  PassManager pm3;
-  pm3.add(createCFGSimplificationPass());
-  switch(SwitchType) {
-  case eSwitchTypeInternal: break;
-  case eSwitchTypeSimple: pm3.add(new LowerSwitchPass()); break;
-  case eSwitchTypeLLVM:  pm3.add(createLowerSwitchPass()); break;
-  default: klee_error("invalid --switch-type");
-  }
-  pm3.add(new IntrinsicCleanerPass(*targetData));
-  //pm3.add(new PhiCleanerPass());
-  pm3.run(*module);
+
+  //S2E moved the code of pm3 and pm4 passes to KModulePrivate,
+  //as they need to be conserved to be run on generated code.
+  p->runPM3(*module);
 
   if (opts.CustomPasses) {
       for(Module::iterator itr = module->begin(), end = module->end(); 
@@ -382,23 +477,8 @@ void KModule::prepare(const Interpreter::ModuleOptions &opts,
       }
   }
 
-  //The PhiCleaner is important to be the last, because the rest of KLEE
-  //makes assumptions about how PHI nodes are placed.
-  PassManager pm4;
-  pm4.add(new PhiCleanerPass());
-  pm4.run(*module);
-#if LLVM_VERSION_CODE < LLVM_VERSION(3, 3)
+  p->runPM4(*module);
 
-  // For cleanliness see if we can discard any of the functions we
-  // forced to import.
-  Function *f;
-  f = module->getFunction("memcpy");
-  if (f && f->use_empty()) f->eraseFromParent();
-  f = module->getFunction("memmove");
-  if (f && f->use_empty()) f->eraseFromParent();
-  f = module->getFunction("memset");
-  if (f && f->use_empty()) f->eraseFromParent();
-#endif
 
   // Write out the .ll assembly file. We truncate long lines to work
   // around a kcachegrind parsing bug (it puts them on new lines), so
@@ -494,6 +574,10 @@ KFunction* KModule::updateModuleWithFunction(llvm::Function *f)
     //IntrinsicCleanerPass ip(*targetData, false);
     //ip.runOnFunction(*f);
 
+    p->runOptimize(*f);
+
+    p->runPM3(*f);
+    p->runPM4(*f);
 
     KFunction *kf = new KFunction(f, this);
 

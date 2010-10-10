@@ -40,6 +40,8 @@ namespace klee {
   class KModule;
   template<class T> class ref;
 
+  class KModulePrivate;
+
   struct KFunction {
     llvm::Function *function;
 
@@ -116,6 +118,9 @@ namespace klee {
   private:
     // Mark function with functionName as part of the KLEE runtime
     void addInternalFunction(const char* functionName);
+
+  protected:
+    KModulePrivate *p;
 
   public:
     KModule(llvm::Module *_module);

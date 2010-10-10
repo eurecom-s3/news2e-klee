@@ -96,6 +96,17 @@ public:
   
   virtual bool runOnModule(llvm::Module &M);
 };
+
+  // A function pass version of the above, but only for bswap
+class IntrinsicFunctionCleanerPass : public llvm::FunctionPass {
+  static char ID;
+
+  bool runOnBasicBlock(llvm::BasicBlock &b);
+public:
+  IntrinsicFunctionCleanerPass() : llvm::FunctionPass(ID) {}
+
+  virtual bool runOnFunction(llvm::Function &f);
+};
   
   // performs two transformations which make interpretation
   // easier and faster.

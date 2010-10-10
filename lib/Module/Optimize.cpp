@@ -80,7 +80,10 @@ static cl::alias A1("S", cl::desc("Alias for --strip-debug"),
 
 // A utility function that adds a pass to the pass manager but will also add
 // a verifier pass after if we're supposed to verify.
-static inline void addPass(PassManager &PM, Pass *P) {
+static inline void addPass(PassManagerBase &PM, Pass *P) {
+  if(dynamic_cast<FunctionPassManager*>(&PM) && !dynamic_cast<FunctionPass*>(P))
+      return;
+
   // Add the pass to the pass manager...
   PM.add(P);
 
@@ -92,7 +95,7 @@ static inline void addPass(PassManager &PM, Pass *P) {
 namespace llvm {
 
 
-static void AddStandardCompilePasses(PassManager &PM) {
+static void AddStandardCompilePasses(PassManagerBase &PM) {
   PM.add(createVerifierPass());                  // Verify that input is correct
 
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 0)
@@ -163,10 +166,10 @@ static void AddStandardCompilePasses(PassManager &PM) {
 /// Optimize - Perform link time optimizations. This will run the scalar
 /// optimizations, any loaded plugin-optimization modules, and then the
 /// inter-procedural optimizations if applicable.
-void Optimize(Module* M) {
+void CreateOptimizePasses(PassManagerBase& Passes, Module* M) {
 
   // Instantiate the pass manager to organize the passes.
-  PassManager Passes;
+  //PassManager Passes;
 
   // If we're verifying, start off with a verification pass.
   if (VerifyEach)
@@ -291,7 +294,7 @@ void Optimize(Module* M) {
     Passes.add(createVerifierPass());
 
   // Run our queue of passes all at once now, efficiently.
-  Passes.run(*M);
+  //Passes.run(*M);
 }
 
 }
