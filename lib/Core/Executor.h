@@ -346,16 +346,6 @@ private:
 
   ref<klee::ConstantExpr> evalConstantExpr(const llvm::ConstantExpr *ce);
 
-  /// Return a unique constant value for the given expression in the
-  /// given state, if it has one (i.e. it provably only has a single
-  /// value). Otherwise return the original expression.
-  ref<Expr> toUnique(const ExecutionState &state, ref<Expr> &e);
-
-  /// Return a constant value for the given expression, forcing it to
-  /// be constant in the given state but WITHOUT adding constraints.
-  /// Note that this function could break correctness !
-  ref<klee::ConstantExpr> toConstantSilent(ExecutionState &state, ref<Expr> e);
-
   /// Bind a constant value for e to the given target. NOTE: This
   /// function may fork state if the state has multiple seeds.
   void executeGetValue(ExecutionState &state, ref<Expr> e, KInstruction *target);
@@ -462,6 +452,16 @@ public:
   // XXX should just be moved out to utility module
   ref<klee::ConstantExpr> evalConstant(const llvm::Constant *c);
 
+  /// Return a unique constant value for the given expression in the
+  /// given state, if it has one (i.e. it provably only has a single
+  /// value). Otherwise return the original expression.
+  ref<Expr> toUnique(const ExecutionState &state, ref<Expr> &e);
+
+  /// Return a constant value for the given expression, forcing it to
+  /// be constant in the given state but WITHOUT adding constraints.
+  /// Note that this function could break correctness !
+  ref<klee::ConstantExpr> toConstantSilent(ExecutionState &state, ref<Expr> e);
+
   /// Return a constant value for the given expression, forcing it to
   /// be constant in the given state by adding a constraint if
   /// necessary. Note that this function breaks completeness and
@@ -543,6 +543,8 @@ public:
   const std::set<ExecutionState*> &getStates() {
     return states;
   }
+
+  Solver *getSolver() const;
 };
   
 } // End klee namespace
