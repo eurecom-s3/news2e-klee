@@ -76,7 +76,7 @@ ExecutionState::ExecutionState(KFunction *kf) :
     depth(0),
     instsSinceCovNew(0),
     coveredNew(false),
-    forkDisabled(true),
+    forkDisabled(false),
     ptreeNode(0) {
   pushFrame(0, kf);
 }
