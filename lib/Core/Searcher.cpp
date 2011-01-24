@@ -548,8 +548,8 @@ BatchingSearcher::~BatchingSearcher() {
 
 ExecutionState &BatchingSearcher::selectState() {
   if (!lastState || 
-      (util::getWallTime()-lastStartTime)>timeBudget ||
-      (stats::instructions-lastStartInstructions)>instructionBudget) {
+      (util::getWallTime()-lastStartTime)>timeBudget  /*||
+      (stats::instructions-lastStartInstructions)>instructionBudget*/) {
     
 //XXX: Do not increase time budget in S2E    
 //    if (lastState) {
