@@ -8,6 +8,15 @@
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
+#ifdef __MINGW32__
+
+#include <stdio.h>
+int main(int argc, char **argv) {
+    printf("klee tool not supported on Windows\n");
+    return -1;
+}
+
+#else /* defined(__MINGW32__) */
 
 #include "klee/ExecutionState.h"
 #include "klee/Expr.h"
@@ -1586,3 +1595,5 @@ int main(int argc, char **argv, char **envp) {
 
   return 0;
 }
+
+#endif /* defined(__MINGW32__) */

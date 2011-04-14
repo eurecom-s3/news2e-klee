@@ -67,7 +67,7 @@ extern "C" unsigned dumpStates, dumpPTree;
 unsigned dumpStates = 0, dumpPTree = 0;
 
 #ifdef __MINGW32__
-VOID CALLBACK TimerProc(
+static VOID CALLBACK onAlarm(
     HWND hwnd,
     UINT uMsg,
     UINT_PTR idEvent,
@@ -76,14 +76,15 @@ VOID CALLBACK TimerProc(
 #else /* defined(__MINGW32__) */
 static void onAlarm(int) {
 #endif /* defined(__MINGW32__) */
-  ++timerTicks;
+    //XXX: Ugly hack, but there are so many of them anyway
+    ++timerTicks;
 }
 
 // oooogalay
 static void setupHandler() {
 #ifdef __MINGW32__
   HANDLE hTimer;
-  SetTimer(0, 0, 1000, TimerProc);
+  SetTimer(0, 0, 1000, onAlarm);
 #else /* defined(__MINGW32__) */
   struct itimerval t;
   struct timeval tv;
