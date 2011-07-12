@@ -533,7 +533,7 @@ void MergingSearcher::update(ExecutionState *current,
 ///
 
 BatchingSearcher::BatchingSearcher(Searcher *_baseSearcher,
-                                   double _timeBudget,
+                                   uint64_t _timeBudget,
                                    unsigned _instructionBudget) 
   : baseSearcher(_baseSearcher),
     timeBudget(_timeBudget),
@@ -546,9 +546,10 @@ BatchingSearcher::~BatchingSearcher() {
   delete baseSearcher;
 }
 
+
 ExecutionState &BatchingSearcher::selectState() {
-  if (!lastState || 
-      (util::getWallTime()-lastStartTime)>timeBudget  /*||
+  if (!lastState ||
+      (util::getTimerTicks() - lastStartTime) > timeBudget /*||
       (stats::instructions-lastStartInstructions)>instructionBudget*/) {
     
 //XXX: Do not increase time budget in S2E    
@@ -562,7 +563,7 @@ ExecutionState &BatchingSearcher::selectState() {
 //    }
     
     lastState = &baseSearcher->selectState();
-    lastStartTime = util::getWallTime();
+    lastStartTime = util::getTimerTicks();
     lastStartInstructions = stats::instructions;
   }
 

@@ -23,6 +23,12 @@ namespace klee {
 
     /// Wall time as TimeValue object.
     llvm::sys::TimeValue getWallTimeVal();
+
+    /**
+     * Get the number of timer ticks since KLEE was started.
+     * This function is cheaper to call than util::getWallTime.
+     */
+    uint64_t getTimerTicks(void);
   }
 }
 

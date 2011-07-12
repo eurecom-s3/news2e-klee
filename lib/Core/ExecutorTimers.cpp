@@ -62,6 +62,15 @@ public:
 static const double kSecondsPerTick = .1;
 static volatile unsigned timerTicks = 0;
 
+//S2E: This is to avoid calling expensive time functions on the critical path
+//This variable is updated evers second
+static volatile uint64_t tickCount = 0;
+
+//TODO: This function should be in lib/System/Time.cpp and not here.
+uint64_t util::getTimerTicks() {
+    return tickCount;
+}
+
 // XXX hack
 extern "C" unsigned dumpStates, dumpPTree;
 unsigned dumpStates = 0, dumpPTree = 0;
@@ -126,6 +135,8 @@ void Executor::processTimers(ExecutionState *current,
                              double maxInstTime) {
   static unsigned callsWithoutCheck = 0;
   unsigned ticks = timerTicks;
+
+  tickCount += 1;
 
   if (!ticks && ++callsWithoutCheck > 1000) {
     setupHandler();
