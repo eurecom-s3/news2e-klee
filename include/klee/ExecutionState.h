@@ -173,7 +173,10 @@ public:
   void popFrame();
 
   void addSymbolic(const MemoryObject *mo, const Array *array);
-  void addConstraint(ref<Expr> e) { constraints.addConstraint(e); }
+
+  virtual void addConstraint(ref<Expr> e) { 
+    constraints.addConstraint(e); 
+  }
 
   virtual bool merge(const ExecutionState &b);
   void dumpStack(llvm::raw_ostream &out) const;
