@@ -77,6 +77,7 @@ class IntrinsicCleanerPass : public llvm::ModulePass {
   bool LowerIntrinsics;
 
   bool runOnBasicBlock(llvm::BasicBlock &b, llvm::Module &M);
+
 public:
 #if LLVM_VERSION_CODE <= LLVM_VERSION(3, 1)
   IntrinsicCleanerPass(const llvm::TargetData &TD,
@@ -94,7 +95,7 @@ public:
       LowerIntrinsics(LI) {}
   ~IntrinsicCleanerPass() { delete IL; } 
   
-  virtual bool runOnModule(llvm::Module &M);
+  virtual bool runOnModule(llvm::Module& M);
 };
 
   // A function pass version of the above, but only for bswap

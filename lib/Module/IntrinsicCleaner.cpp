@@ -33,6 +33,7 @@
 #include "llvm/LLVMContext.h"
 #include "llvm/Module.h"
 #include "llvm/Type.h"
+#include "llvm/Support/CallSite.h"
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 2)
 #include "llvm/IRBuilder.h"
 #else
@@ -149,15 +150,67 @@ static Value *LowerBSWAP(LLVMContext &Context, Value *V, Instruction *IP) {
   return V;
 }
 
+
 char IntrinsicCleanerPass::ID;
+
+/// ReplaceCallWith - This function is used when we want to lower an intrinsic
+/// call to a call of an external function.  This handles hard cases such as
+/// when there was already a prototype for the external function, and if that
+/// prototype doesn't match the arguments we expect to pass in.
+template <class ArgIt>
+static CallInst *ReplaceCallWith(const char *NewFn, CallInst *CI,
+                                 ArgIt ArgBegin, ArgIt ArgEnd,
+                                 Type *RetTy) {
+  // If we haven't already looked up this function, check to see if the
+  // program already contains a function with this name.
+  Module *M = CI->getParent()->getParent()->getParent();
+  // Get or insert the definition now.
+  std::vector<Type *> ParamTys;
+  for (ArgIt I = ArgBegin; I != ArgEnd; ++I)
+    ParamTys.push_back((*I)->getType());
+  Constant* FCache = M->getOrInsertFunction(NewFn,
+                                  FunctionType::get(RetTy, ParamTys, false));
+
+  IRBuilder<> Builder(CI->getParent(), CI);
+  SmallVector<Value *, 8> Args(ArgBegin, ArgEnd);
+  CallInst *NewCI = Builder.CreateCall(FCache, Args);
+  NewCI->setName(CI->getName());
+  if (!CI->use_empty())
+    CI->replaceAllUsesWith(NewCI);
+  CI->eraseFromParent();
+  return NewCI;
+}
+
+static void ReplaceFPIntrinsicWithCall(CallInst *CI, const char *Fname,
+                                       const char *Dname,
+                                       const char *LDname) {
+  CallSite CS(CI);
+  switch (CI->getArgOperand(0)->getType()->getTypeID()) {
+  default: assert(false && "Invalid type in intrinsic");
+  case Type::FloatTyID:
+    ReplaceCallWith(Fname, CI, CS.arg_begin(), CS.arg_end(),
+                  Type::getFloatTy(CI->getContext()));
+    break;
+  case Type::DoubleTyID:
+    ReplaceCallWith(Dname, CI, CS.arg_begin(), CS.arg_end(),
+                  Type::getDoubleTy(CI->getContext()));
+    break;
+  case Type::X86_FP80TyID:
+  case Type::FP128TyID:
+  case Type::PPC_FP128TyID:
+    ReplaceCallWith(LDname, CI, CS.arg_begin(), CS.arg_end(),
+                  CI->getArgOperand(0)->getType());
+    break;
+  }
+}
 
 bool IntrinsicCleanerPass::runOnModule(Module &M) {
   bool dirty = false;
   for (Module::iterator f = M.begin(), fe = M.end(); f != fe; ++f)
     for (Function::iterator b = f->begin(), be = f->end(); b != be; ++b)
       dirty |= runOnBasicBlock(*b, M);
-    if (Function *Declare = M.getFunction("llvm.trap"))
-      Declare->eraseFromParent();
+  if (Function *Declare = M.getFunction("llvm.trap"))
+    Declare->eraseFromParent();
   return dirty;
 }
 
@@ -176,6 +229,7 @@ bool IntrinsicCleanerPass::runOnBasicBlock(BasicBlock &b, Module &M) {
     // increment now since LowerIntrinsic deletion makes iterator invalid.
     ++i;  
     if(ii) {
+			CallSite CS(ii);
       switch (ii->getIntrinsicID()) {
       case Intrinsic::vastart:
       case Intrinsic::vaend:
@@ -302,7 +356,6 @@ bool IntrinsicCleanerPass::runOnBasicBlock(BasicBlock &b, Module &M) {
         dirty = true;
         break;
       }
-
       case Intrinsic::dbg_value:
       case Intrinsic::dbg_declare:
         // Remove these regardless of lower intrinsics flag. This can
@@ -311,7 +364,62 @@ bool IntrinsicCleanerPass::runOnBasicBlock(BasicBlock &b, Module &M) {
         ii->eraseFromParent();
         dirty = true;
         break;
+      case Intrinsic::powi:
+    		ReplaceFPIntrinsicWithCall(ii, "powif", "powi", "powil");
+				dirty = true;
+    		break;
+      case Intrinsic::memset:
+      case Intrinsic::memcpy:
+      case Intrinsic::memmove: {
+        LLVMContext &Ctx = ii->getContext();
 
+        Value *dst = ii->getArgOperand(0);
+        Value *src = ii->getArgOperand(1);
+        Value *len = ii->getArgOperand(2);
+
+        BasicBlock *BB = ii->getParent();
+        Function *F = BB->getParent();
+
+        BasicBlock *exitBB = BB->splitBasicBlock(ii);
+        BasicBlock *headerBB = BasicBlock::Create(Ctx, Twine(), F, exitBB);
+        BasicBlock *bodyBB  = BasicBlock::Create(Ctx, Twine(), F, exitBB);
+
+        // Enter the loop header
+        BB->getTerminator()->eraseFromParent();
+        BranchInst::Create(headerBB, BB);
+
+        // Create loop index
+        PHINode *idx = PHINode::Create(len->getType(), 2, "", headerBB);
+        idx->addIncoming(ConstantInt::get(len->getType(), 0), BB);
+
+        // Check loop condition, then move to the loop body or exit the loop
+        Value *loopCond = ICmpInst::Create(Instruction::ICmp, ICmpInst::ICMP_ULT,
+                                           idx, len, Twine(), headerBB);
+        BranchInst::Create(bodyBB, exitBB, loopCond, headerBB);
+
+        // Get value to store
+        Value *val;
+        if (ii->getIntrinsicID() == Intrinsic::memset) {
+          val = src;
+        } else {
+          Value *srcPtr = GetElementPtrInst::Create(src, idx, Twine(), bodyBB);
+          val = new LoadInst(srcPtr, Twine(), bodyBB);
+        }
+
+        // Store the value
+        Value* dstPtr = GetElementPtrInst::Create(dst, idx, Twine(), bodyBB);
+        new StoreInst(val, dstPtr, bodyBB);
+
+        // Update index and branch back
+        Value* newIdx = BinaryOperator::Create(Instruction::Add,
+                    idx, ConstantInt::get(len->getType(), 1), Twine(), bodyBB);
+        BranchInst::Create(headerBB, bodyBB);
+        idx->addIncoming(newIdx, bodyBB);
+        // Update iterators to continue in the next BB
+        i = exitBB->begin();
+        ie = exitBB->end();
+        break;
+      }
       case Intrinsic::trap: {
         // Intrisic instruction "llvm.trap" found. Directly lower it to
         // a call of the abort() function.
@@ -403,5 +511,6 @@ bool IntrinsicFunctionCleanerPass::runOnBasicBlock(llvm::BasicBlock &b)
 
   return dirty;
 }
+
 
 }
