@@ -229,7 +229,9 @@ KModule::~KModule() {
     delete it->second;
 
   delete targetData;
-  delete module;
+
+  //XXX: S2E: we use the module outside, so do not delete it here.
+  //delete module;
 
   delete p;
 }
