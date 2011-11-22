@@ -546,6 +546,8 @@ public:
 
   Solver *getSolver() const;
   void initializeSolver();
+
+   Expr::Width getWidthForLLVMType(const llvm::Type *type) const;
 };
   
 } // End klee namespace
