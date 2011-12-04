@@ -693,7 +693,12 @@ void Executor::initializeGlobals(ExecutionState &state) {
   for (Module::const_global_iterator i = m->global_begin(),
          e = m->global_end();
        i != e; ++i) {
+    if (predefinedSymbols.find(i->getName()) != predefinedSymbols.end()) {
+        continue;
+    }
+
     if (i->hasInitializer()) {
+      assert(globalObjects.find(i) != globalObjects.end());
       const MemoryObject *mo = globalObjects.find(i)->second;
       const ObjectState *os = state.addressSpace.findObject(mo);
       assert(os);
@@ -2549,45 +2554,6 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     bindLocal(ki, state, result);
     break;
   }
- 
-  case Instruction::InsertValue: {
-      KGEPInstruction *kgepi = static_cast<KGEPInstruction*>(ki);
-
-      ref<Expr> agg = eval(ki, 0, state).value;
-      ref<Expr> val = eval(ki, 1, state).value;
-
-      ref<Expr> l = NULL, r = NULL;
-      unsigned lOffset = kgepi->offset*8, rOffset = kgepi->offset*8 + val->getWidth();
-
-      if (lOffset > 0)
-        l = ExtractExpr::create(agg, 0, lOffset);
-      if (rOffset < agg->getWidth())
-        r = ExtractExpr::create(agg, rOffset, agg->getWidth() - rOffset);
-
-      ref<Expr> result;
-      if (!l.isNull() && !r.isNull())
-        result = ConcatExpr::create(r, ConcatExpr::create(val, l));
-      else if (!l.isNull())
-        result = ConcatExpr::create(val, l);
-      else if (!r.isNull())
-        result = ConcatExpr::create(r, val);
-      else
-        result = val;
-
-      bindLocal(ki, state, result);
-      break;
-    }
-    case Instruction::ExtractValue: {
-      KGEPInstruction *kgepi = static_cast<KGEPInstruction*>(ki);
-
-      ref<Expr> agg = eval(ki, 0, state).value;
-
-      ref<Expr> result = ExtractExpr::create(agg, kgepi->offset*8, getWidthForLLVMType(i->getType()));
-
-      bindLocal(ki, state, result);
-      break;
-    }
-
   case Instruction::ExtractElement: {
       ExtractElementInst *eei = cast<ExtractElementInst>(i);
       ref<Expr> vec = eval(ki, 0, state).value;
@@ -3906,8 +3872,3 @@ void Executor::setAllExternalWarnings(bool value)
 {
     AllExternalWarnings.setValue(value);
 }
-
-Expr::Width Executor::getWidthForLLVMType(const llvm::Type *type) const {
-  return kmodule->targetData->getTypeSizeInBits(type);
-}
-
