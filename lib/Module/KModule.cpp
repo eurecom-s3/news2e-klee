@@ -108,6 +108,7 @@ extern void CreateOptimizePasses(PassManagerBase&, Module*);
 namespace klee {
 
 class KModulePrivate {
+  llvm::PassManager pmOptimize, pm3, pm4;
   llvm::FunctionPassManager fpmOptimize, fpm3, fpm4;
 
   bool optimize;
@@ -126,26 +127,38 @@ public:
     // linked in something with intrinsics but any external calls are
     // going to be unresolved. We really need to handle the intrinsics
     // directly I think?
+    pm3.add(createCFGSimplificationPass());
     fpm3.add(createCFGSimplificationPass());
 
     switch(SwitchType) {
       case eSwitchTypeInternal: 
         break;
       case eSwitchTypeSimple:
+        pm3.add(new LowerSwitchPass());
         fpm3.add(new LowerSwitchPass());
         break;
       case eSwitchTypeLLVM:
+        pm3.add(createLowerSwitchPass()); 
         fpm3.add(createLowerSwitchPass()); 
         break;
       default: 
         klee_error("invalid --switch-type");
     }
+
+    pm3.add(new IntrinsicCleanerPass(*dataLayout));
     fpm3.add(new IntrinsicFunctionCleanerPass());
 
     //The PhiCleaner is important to be the last, because the rest of KLEE
     //makes assumptions about how PHI nodes are placed.
+
+    pm4.add(new PhiCleanerPass());
     fpm4.add(new PhiCleanerPass());
 
+    pm4.add(new IntrinsicCleanerPass(*dataLayout));
+    fpm4.add(new IntrinsicCleanerPass(*dataLayout));
+
+
+    CreateOptimizePasses(pmOptimize, module);
     CreateOptimizePasses(fpmOptimize, module);
     fpmOptimize.doInitialization();
   }
@@ -155,12 +168,7 @@ public:
   }
 
   void runPM3(llvm::Module& mod) {
-      for (llvm::Module::iterator itr = mod.begin(), end = mod.end();
-           itr != end;
-           ++itr) 
-      {
-          runPM3(*itr);
-      }
+      pm3.run(mod);
   }
 
   void runPM4(llvm::Function& f) {
@@ -168,12 +176,7 @@ public:
   }
 
   void runPM4(llvm::Module& mod) {
-      for (llvm::Module::iterator itr = mod.begin(), end = mod.end();
-           itr != end;
-           ++itr) 
-      {
-          runPM4(*itr);
-      }
+      pm4.run(mod);
   }
 
   void runOptimize(llvm::Function& f) {
@@ -183,15 +186,8 @@ public:
   }
 
   void runOptimize(llvm::Module& mod) {
-      if (!optimize) {
-          return;
-      }
-
-      for (llvm::Module::iterator itr = mod.begin(), end = mod.end();
-           itr != end;
-           ++itr) 
-      {
-          runOptimize(*itr);
+      if (optimize) {
+          pmOptimize.run(mod);
       }
   }
 
