@@ -22,6 +22,7 @@
 #include "klee/Internal/Module/KModule.h"
 #include "klee/util/ArrayCache.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/CallSite.h"
 
 #include "llvm/ADT/Twine.h"
 
@@ -53,7 +54,7 @@ namespace llvm {
   class ExecutionEngine;
 }
 
-namespace klee {  
+namespace klee {
   class Array;
   struct Cell;
   class ExecutionState;
@@ -123,13 +124,13 @@ private:
   PTree *processTree;
 
   /// Used to track states that have been added during the current
-  /// instructions step. 
-  /// \invariant \ref addedStates is a subset of \ref states. 
+  /// instructions step.
+  /// \invariant \ref addedStates is a subset of \ref states.
   /// \invariant \ref addedStates and \ref removedStates are disjoint.
   std::set<ExecutionState*> addedStates;
   /// Used to track states that have been removed during the current
-  /// instructions step. 
-  /// \invariant \ref removedStates is a subset of \ref states. 
+  /// instructions step.
+  /// \invariant \ref removedStates is a subset of \ref states.
   /// \invariant \ref addedStates and \ref removedStates are disjoint.
   std::set<ExecutionState*> removedStates;
 
@@ -144,7 +145,7 @@ private:
 
   /// Map of predefined global values
   std::map<std::string, void*> predefinedSymbols;
-  
+
   /// Map of globals to their representative memory object.
   std::map<const llvm::GlobalValue*, MemoryObject*> globalObjects;
 
@@ -167,7 +168,7 @@ private:
 
   /// When non-null a list of "seed" inputs which will be used to
   /// drive execution.
-  const std::vector<struct KTest *> *usingSeeds;  
+  const std::vector<struct KTest *> *usingSeeds;
 
   /// Disables forking, instead a random path is chosen. Enabled as
   /// needed to control memory usage. \see fork()
@@ -178,7 +179,7 @@ private:
 
   /// Signals the executor to halt execution at the next instruction
   /// step.
-  bool haltExecution;  
+  bool haltExecution;
 
   /// Whether implied-value concretization is enabled. Currently
   /// false, it is buggy (it needs to validate its writes).
@@ -206,6 +207,8 @@ private:
   /// Simplifier user to simplify expressions when adding them
   BitfieldSimplifier *exprSimplifier;
 
+  llvm::Function* getCalledFunction(llvm::CallSite &cs, ExecutionState &state);
+
   void executeInstruction(ExecutionState &state, KInstruction *ki);
 
   void printFileLine(ExecutionState &state, KInstruction *ki,
@@ -213,9 +216,9 @@ private:
 
   void run(ExecutionState &initialState);
 
-  // Given a concrete object in our [klee's] address space, add it to 
+  // Given a concrete object in our [klee's] address space, add it to
   // objects checked code can reference.
-  MemoryObject *addExternalObject(ExecutionState &state, void *addr, 
+  MemoryObject *addExternalObject(ExecutionState &state, void *addr,
                                   unsigned size, bool isReadOnly,
                                   bool isUserSpecified = false,
                                   bool isSharedConcrete = false,
@@ -228,7 +231,7 @@ private:
 
   void stepInstruction(ExecutionState &state);
   void updateStates(ExecutionState *current);
-  void transferToBasicBlock(llvm::BasicBlock *dst, 
+  void transferToBasicBlock(llvm::BasicBlock *dst,
 			    llvm::BasicBlock *src,
 			    ExecutionState &state);
 
@@ -248,7 +251,7 @@ private:
   /// \param results[out] A list of ((MemoryObject,ObjectState),
   /// state) pairs for each object the given address can point to the
   /// beginning of.
-  typedef std::vector< std::pair<std::pair<const MemoryObject*, const ObjectState*>, 
+  typedef std::vector< std::pair<std::pair<const MemoryObject*, const ObjectState*>,
                                  ExecutionState*> > ExactResolutionList;
   void resolveExact(ExecutionState &state,
                     ref<Expr> p,
@@ -285,12 +288,12 @@ private:
   void executeFree(ExecutionState &state,
                    ref<Expr> address,
                    KInstruction *target = 0);
-  
-  void executeCall(ExecutionState &state, 
+
+  void executeCall(ExecutionState &state,
                    KInstruction *ki,
                    llvm::Function *f,
                    std::vector< ref<Expr> > &arguments);
-                   
+
   // do address resolution / object binding / out of bounds checking
   // and perform the operation
   void executeMemoryOperation(ExecutionState &state,
@@ -320,26 +323,26 @@ private:
   // Used for testing.
   ref<Expr> replaceReadWithSymbolic(ExecutionState &state, ref<Expr> e);
 
-  const Cell& eval(KInstruction *ki, unsigned index, 
+  const Cell& eval(KInstruction *ki, unsigned index,
                    ExecutionState &state) const;
 
   Cell& getArgumentCell(ExecutionState &state,
                         KFunction *kf,
                         unsigned index) {
-      //*klee::klee_warning_stream << std::dec << "arg idx="<< index<< " "  << kf->getArgRegister(index) << std::endl;
+      // *klee::klee_warning_stream << std::dec << "arg idx="<< index<< " "  << kf->getArgRegister(index) << std::endl;
       return state.stack.back().locals[kf->getArgRegister(index)];
   }
 
   Cell& getDestCell(ExecutionState &state,
                     KInstruction *target) {
-      //*klee_warning_stream << "dst Td="<< std::dec << target->dest << std::endl;
+      // *klee_warning_stream << "dst Td="<< std::dec << target->dest << std::endl;
       return state.stack.back().locals[target->dest];
   }
 
-  void bindLocal(KInstruction *target, 
-                 ExecutionState &state, 
+  void bindLocal(KInstruction *target,
+                 ExecutionState &state,
                  ref<Expr> value);
-  void bindArgument(KFunction *kf, 
+  void bindArgument(KFunction *kf,
                     unsigned index,
                     ExecutionState &state,
                     ref<Expr> value);
@@ -372,8 +375,8 @@ private:
   /// constant values.
   void bindInstructionConstants(KInstruction *KI);
 
-  void handlePointsToObj(ExecutionState &state, 
-                         KInstruction *target, 
+  void handlePointsToObj(ExecutionState &state,
+                         KInstruction *target,
                          const std::vector<ref<Expr> > &arguments);
 
   void doImpliedValueConcretization(ExecutionState &state,
@@ -504,7 +507,7 @@ public:
                                  char **envp);
 
   /*** Runtime options ***/
-  
+
   virtual void setHaltExecution(bool value) {
     haltExecution = value;
   }
@@ -523,8 +526,8 @@ public:
                                 std::string &res,
                                 Interpreter::LogType logFormat = Interpreter::STP);
 
-  virtual bool getSymbolicSolution(const ExecutionState &state, 
-                                   std::vector< 
+  virtual bool getSymbolicSolution(const ExecutionState &state,
+                                   std::vector<
                                    std::pair<std::string,
                                    std::vector<unsigned char> > >
                                    &res);
@@ -547,7 +550,7 @@ public:
   Solver *getSolver() const;
   void initializeSolver();
 };
-  
+
 } // End klee namespace
 
 #endif
