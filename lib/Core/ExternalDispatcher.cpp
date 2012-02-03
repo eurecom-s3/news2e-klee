@@ -235,7 +235,7 @@ Function *ExternalDispatcher::createDispatcher(Function *target, Instruction *in
     cast<FunctionType>(cast<PointerType>(target->getType())->getElementType());
 
   // Each argument will be passed by writing it into gTheArgsP[i].
-  unsigned i = 0, idx = 2;
+  unsigned i = 0;
   for (CallSite::arg_iterator ai = cs.arg_begin(), ae = cs.arg_end();
        ai!=ae; ++ai, ++i) {
     // Determine the type the argument will be passed as. This accomodates for
@@ -246,30 +246,49 @@ Function *ExternalDispatcher::createDispatcher(Function *target, Instruction *in
     Instruction *argI64p = 
       GetElementPtrInst::Create(argI64s, 
                                 ConstantInt::get(Type::getInt32Ty(getGlobalContext()), 
-                                                 idx), 
+                                                 i + 1), 
                                 "", dBB);
 
     Instruction *argp = new BitCastInst(argI64p, PointerType::getUnqual(argTy),
                                         "", dBB);
     args[i] = new LoadInst(argp, "", dBB);
 
-    unsigned argSize = argTy->getPrimitiveSizeInBits();
-    idx += ((!!argSize ? argSize : 64) + 63)/64;
   }
+  /////////////////////
+  //S2E modification
+  //The original KLEE code issued a call instruction to the external function
+  //represented by a plain llvm::Function. The LLVM JIT would create a stub
+  //for such a call. The stub and the JITed function (the one returned by this method)
+  //must be close enough in memory because the JIT generates a machine call instruction
+  //that uses a relative 32-bits displacement. Unfortunately, the default JIT memory
+  //manager allocates blocks of code too far apart for a 32-bit value.
+  //To solve this, we create an absolute call by casting the native pointer to
+  //the helper to the type of that helper.
 
-  Constant *dispatchTarget =
-    dispatchModule->getOrInsertFunction(target->getName(), FTy,
-                                        target->getAttributes());
-  Instruction *funcPtrCast = new BitCastInst(dispatchTarget, 
-                                             cs.getCalledValue()->getType(),
-                                             "",
-                                             dBB);
+  uintptr_t targetFunctionAddress =
+          (uintptr_t) llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(target->getName());
+
+  assert(targetFunctionAddress && "External function not registered");
+
+
+  Instruction *toPtr = new IntToPtrInst(
+              ConstantInt::get(Type::getInt64Ty(dispatchModule->getContext()),
+                               APInt(sizeof(targetFunctionAddress) * 8, targetFunctionAddress)),
+              PointerType::get(Type::getInt64Ty(dispatchModule->getContext()), 0), "", dBB);
+
+  Instruction *dispatchTarget = new BitCastInst(
+        toPtr,
+        cs.getCalledValue()->getType(), "", dBB);
+
+  /////////////////////
+
+
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 0)
-  Instruction *result = CallInst::Create(funcPtrCast,
+  Instruction *result = CallInst::Create(dispatchTarget,
                                          llvm::ArrayRef<Value *>(args, args+i),
                                          "", dBB);
 #else
-  Instruction *result = CallInst::Create(funcPtrCast, args, args+i, "", dBB);
+  Instruction *result = CallInst::Create(dispatchTarget, args, args+i, "", dBB);
 #endif
   if (result->getType() != Type::getVoidTy(getGlobalContext())) {
     Instruction *resp =
