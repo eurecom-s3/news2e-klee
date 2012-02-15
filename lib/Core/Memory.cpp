@@ -344,7 +344,7 @@ const uint8_t *ObjectState::getConcreteStore(bool allowSymbolic) const
     if (!allowSymbolic && !isAllConcrete()) {
         return NULL;
     }
-    return concreteStore;
+    return object->isSharedConcrete ? (uint8_t*) object->address : concreteStore;
 }
 
 uint8_t *ObjectState::getConcreteStore(bool allowSymbolic)
@@ -352,7 +352,7 @@ uint8_t *ObjectState::getConcreteStore(bool allowSymbolic)
     if (!allowSymbolic && !isAllConcrete()) {
         return NULL;
     }
-    return concreteStore;
+    return object->isSharedConcrete ? (uint8_t*) object->address : concreteStore;
 }
 
 
