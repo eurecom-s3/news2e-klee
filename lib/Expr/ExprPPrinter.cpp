@@ -9,6 +9,7 @@
 
 #include "klee/util/PrintContext.h"
 #include "klee/util/ExprPPrinter.h"
+#include "klee/Common.h"
 
 #include "klee/Constraints.h"
 
@@ -346,7 +347,7 @@ public:
 	PC << "(w" << e->getWidth() << " ";
 
       if (e->getWidth() <= 64) {
-        PC << e->getZExtValue();
+        PC << hexval(e->getZExtValue());
       } else {
         std::string S;
         e->toString(S);
