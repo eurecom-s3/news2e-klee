@@ -635,11 +635,8 @@ void Executor::initializeGlobals(ExecutionState &state) {
       // concrete value and write it to our copy.
       if (size) {
         void *addr;
-        if (i->getName() == "__dso_handle") {
-          addr = &__dso_handle; // wtf ?
-        } else {
-          addr = externalDispatcher->resolveSymbol(i->getName());
-        }
+        addr = externalDispatcher->resolveSymbol(i->getName());
+
         if (!addr)
           klee_error("unable to load symbol(%s) while initializing globals.", 
                      i->getName().data());

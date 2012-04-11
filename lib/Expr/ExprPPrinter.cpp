@@ -347,7 +347,9 @@ public:
 	PC << "(w" << e->getWidth() << " ";
 
       if (e->getWidth() <= 64) {
-        PC << hexval(e->getZExtValue());
+        std::stringstream ss;
+        ss << std::hex << e->getZExtValue();
+        PC.write(ss.str());
       } else {
         std::string S;
         e->toString(S);
