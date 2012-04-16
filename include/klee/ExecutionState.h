@@ -18,6 +18,8 @@
 #include "../../lib/Core/AddressSpace.h"
 #include "klee/Internal/Module/KInstIterator.h"
 
+#include "klee/util/Assignment.h"
+
 #include <map>
 #include <set>
 #include <vector>
@@ -142,6 +144,15 @@ public:
 
   /// @brief Set of used array names for this state.  Used to avoid collisions.
   std::set<std::string> arrayNames;
+
+  Assignment concolics;
+  bool speculative;
+
+
+  // Used by the checkpoint/rollback methods for fake objects.
+  // FIXME: not freeing things on branch deletion.
+  MemoryMap shadowObjects;
+
 
   std::string getFnAlias(std::string fn);
   void addFnAlias(std::string old_fn, std::string new_fn);
