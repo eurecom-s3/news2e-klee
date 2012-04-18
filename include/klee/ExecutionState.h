@@ -147,7 +147,7 @@ public:
 
   Assignment concolics;
   bool speculative;
-
+  ref<Expr> speculativeCondition;
 
   // Used by the checkpoint/rollback methods for fake objects.
   // FIXME: not freeing things on branch deletion.
