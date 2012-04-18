@@ -902,7 +902,7 @@ bool Executor::resolveSpeculativeState(ExecutionState &state)
     }
 
     state.speculative = false;
-
+    state.addConstraint(state.speculativeCondition);
     return true;
 }
 
