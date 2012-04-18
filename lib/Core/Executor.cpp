@@ -793,6 +793,16 @@ void Executor::branch(ExecutionState &state,
       addConstraint(*result[i], conditions[i]);
 }
 
+static std::string exprToString(ref<Expr> expr)
+{
+    std::string str;
+    llvm::raw_string_ostream ss(str);
+    ss << *expr;
+    ss.flush();
+    return str;
+}
+    
+
 Executor::StatePair
 Executor::concolicFork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
     condition = simplifyExpr(current, condition);
@@ -803,7 +813,7 @@ Executor::concolicFork(ExecutionState &current, ref<Expr> condition, bool isInte
         return Executor::fork(current, condition, isInternal);
     }
 
-    *klee_message_stream << "Concolic fork for expression " << condition << "\n";
+    klee_message("Concolic fork for expression %s",  exprToString(condition).c_str());
 
     //The current state is guaranteed to be consistent with whatever
     //assignment is stored in the concolics variable.
@@ -823,8 +833,8 @@ Executor::concolicFork(ExecutionState &current, ref<Expr> condition, bool isInte
         if (!solver->getInitialValues(current, symbObjects, concreteObjects)) {
             current.pc = current.prevPC;
             std::stringstream ss;
-            ss << "Could not get initial values on expression " << evalResult
-               << " for condition " << condition;
+            ss << "Could not get initial values on expression " << *evalResult
+               << " for condition " << *condition;
             terminateStateEarly(current, ss.str());
             return StatePair(0, 0);
         }

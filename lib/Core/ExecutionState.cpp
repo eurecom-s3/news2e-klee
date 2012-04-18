@@ -77,12 +77,18 @@ ExecutionState::ExecutionState(KFunction *kf) :
     instsSinceCovNew(0),
     coveredNew(false),
     forkDisabled(false),
-    ptreeNode(0) {
+    ptreeNode(0),
+    speculative(false){
   pushFrame(0, kf);
 }
 
-ExecutionState::ExecutionState(const std::vector<ref<Expr> > &assumptions)
-    : addressSpace(this), constraints(assumptions), queryCost(0.), ptreeNode(0) {}
+ExecutionState::ExecutionState(const std::vector<ref<Expr> > &assumptions) 
+  : addressSpace(this),
+    constraints(assumptions),
+    queryCost(0.),
+    ptreeNode(0),
+    speculative(false) {
+}
 
 ExecutionState::~ExecutionState() {
   for (unsigned int i=0; i<symbolics.size(); i++)
