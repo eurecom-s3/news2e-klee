@@ -594,7 +594,8 @@ KFunction* KModule::updateModuleWithFunction(llvm::Function *f)
     return kf;
 }
 
-void KModule::removeFunction(llvm::Function *f)
+
+void KModule::removeFunction(llvm::Function *f, bool keepDeclaration)
 {
     std::map<llvm::Function*, KFunction*>::iterator it = functionMap.find(f);
     assert(it != functionMap.end());
@@ -605,7 +606,11 @@ void KModule::removeFunction(llvm::Function *f)
     functionMap.erase(f);
     delete kf;
 
-    f->eraseFromParent();
+    if (keepDeclaration) {
+        f->deleteBody();
+    } else {
+        f->eraseFromParent();
+    }
 }
 
 KConstant* KModule::getKConstant(Constant *c) {

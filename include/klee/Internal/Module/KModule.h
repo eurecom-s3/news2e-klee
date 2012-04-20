@@ -139,7 +139,7 @@ namespace klee {
     KFunction* updateModuleWithFunction(llvm::Function *f);
 
     /// Remove function from KModule and call removeFromParend on it
-    void removeFunction(llvm::Function *f);
+    void removeFunction(llvm::Function *f, bool keepDeclaration = false);
   };
 } // End klee namespace
 
