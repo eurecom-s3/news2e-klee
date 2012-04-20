@@ -12,6 +12,7 @@
 #include "klee/Config/Version.h"
 #include "klee/ExecutionState.h"
 #include "klee/Solver.h"
+#include "klee/Common.h"
 #include "klee/Statistics.h"
 #include "klee/Internal/System/Time.h"
 
@@ -26,6 +27,9 @@ using namespace llvm;
 
 bool TimingSolver::evaluate(const ExecutionState& state, ref<Expr> expr,
                             Solver::Validity &result) {
+
+  expr = state.concolics.evaluate(expr);
+
   // Fast path, to avoid timer and OS overhead.
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(expr)) {
     result = CE->isTrue() ? Solver::True : Solver::False;
@@ -49,6 +53,8 @@ bool TimingSolver::evaluate(const ExecutionState& state, ref<Expr> expr,
 
 bool TimingSolver::mustBeTrue(const ExecutionState& state, ref<Expr> expr, 
                               bool &result) {
+  expr = state.concolics.evaluate(expr);
+
   // Fast path, to avoid timer and OS overhead.
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(expr)) {
     result = CE->isTrue() ? true : false;
@@ -95,6 +101,9 @@ bool TimingSolver::mayBeFalse(const ExecutionState& state, ref<Expr> expr,
 
 bool TimingSolver::getValue(const ExecutionState& state, ref<Expr> expr, 
                             ref<ConstantExpr> &result) {
+
+  expr = state.concolics.evaluate(expr);
+
   // Fast path, to avoid timer and OS overhead.
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(expr)) {
     result = CE;
