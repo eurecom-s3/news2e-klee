@@ -82,8 +82,13 @@ namespace klee {
 
   class DFSSearcher : public Searcher {
     std::vector<ExecutionState*> states;
+    ExecutionState *currentState;
 
   public:
+    DFSSearcher() {
+        currentState = NULL;
+    }
+
     ExecutionState &selectState();
     void update(ExecutionState *current,
                 const std::set<ExecutionState*> &addedStates,
