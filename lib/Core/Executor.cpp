@@ -3564,12 +3564,30 @@ void Executor::executeMemoryOperation(ExecutionState &state,
   //Avoids calling the constraint solver for simple cases
   success = state.addressSpace.resolveOneFast(*exprSimplifier, address, op, &fastInBounds);
   if (!success) {
-    solver->setTimeout(coreSolverTimeout);
-    if (!state.addressSpace.resolveOne(state, solver, address, op, success)) {
-      address = toConstant(state, address, "resolveOne failure");
-      success = state.addressSpace.resolveOne(cast<ConstantExpr>(address), op);
-    }
-    solver->setTimeout(0);
+      if (concolicMode) {
+          klee::ref<klee::Expr> concreteAddress;
+          concreteAddress = state.concolics.evaluate(address);
+          assert(dyn_cast<klee::ConstantExpr>(concreteAddress) && "Could not evaluate address");
+          klee::ref<klee::Expr> condition = EqExpr::create(concreteAddress, address);
+
+          StatePair branches = fork(state, condition, true);
+          assert(branches.first == &state);
+          if (branches.second) {
+            //The forked state will have to re-execute the memory op
+            branches.second->pc = branches.second->prevPC;
+          }
+
+          address = concreteAddress;
+          success = state.addressSpace.resolveOneFast(*exprSimplifier, address, op, &fastInBounds);
+          assert(success && "Could not resolve concrete memory address");
+      } else {
+        solver->setTimeout(coreSolverTimeout);
+        if (!state.addressSpace.resolveOne(state, solver, address, op, success)) {
+          address = toConstant(state, address, "resolveOne failure");
+          success = state.addressSpace.resolveOne(cast<ConstantExpr>(address), op);
+        }
+        solver->setTimeout(0);
+      }
   }
 
   if (success) {
