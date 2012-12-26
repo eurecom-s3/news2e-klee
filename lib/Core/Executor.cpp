@@ -442,6 +442,7 @@ ref<Expr> Executor::simplifyExpr(const ExecutionState &s, ref<Expr> e)
             ref<Expr> eq = EqExpr::create(simplified, e);
             assert(solver->mustBeTrue(s, eq, isEqual));
             assert(isEqual && "Original and simplified expression must be equal");
+            assert(!concolicMode && "Not tested in concolic mode");
         }
 
         return simplified;
@@ -1895,6 +1896,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
         isDefault = simplifyExpr(state, AndExpr::create(isDefault,
                                     Expr::createIsZero(match)));
         bool result;
+        assert(!concolicMode && "Not tested in concolic mode");
         bool success = solver->mayBeTrue(state, match, result);
         assert(success && "FIXME: Unhandled solver failure");
         (void) success;
@@ -1912,6 +1914,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
         }
       }
       bool res;
+      assert(!concolicMode && "Not tested in concolic mode");
       bool success = solver->mayBeTrue(state, isDefault, res);
       assert(success && "FIXME: Unhandled solver failure");
       (void) success;
@@ -2025,6 +2028,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
          handle it for us, albeit with some overhead. */
       do {
         ref<ConstantExpr> value;
+        assert(!concolicMode && "Not tested in concolic mode");
         bool success = solver->getValue(*free, v, value);
         assert(success && "FIXME: Unhandled solver failure");
         (void) success;
@@ -3023,6 +3027,7 @@ std::string Executor::getAddressInfo(ExecutionState &state,
     example = CE->getZExtValue();
   } else {
     ref<ConstantExpr> value;
+    assert(!concolicMode && "Not tested in concolic mode");
     bool success = solver->getValue(state, address, value);
     assert(success && "FIXME: Unhandled solver failure");
     (void) success;
@@ -3227,6 +3232,7 @@ void Executor::callExternalFunction(ExecutionState &state,
        ae = arguments.end(); ai!=ae; ++ai) {
     if (AllowExternalSymCalls) { // don't bother checking uniqueness
       ref<ConstantExpr> ce;
+      assert(!concolicMode && "Not tested in concolic mode");
       bool success = solver->getValue(state, *ai, ce);
       assert(success && "FIXME: Unhandled solver failure");
       (void) success;
@@ -3396,6 +3402,7 @@ void Executor::executeAlloc(ExecutionState &state,
     // collapses the size expression with a select.
 
     ref<ConstantExpr> example;
+    assert(!concolicMode && "Not tested in concolic mode");
     bool success = solver->getValue(state, size, example);
     assert(success && "FIXME: Unhandled solver failure");
     (void) success;
