@@ -1336,25 +1336,35 @@ void Executor::bindArgument(KFunction *kf, unsigned index,
   getArgumentCell(state, kf, index).value = simplifyExpr(state, value);
 }
 
-ref<Expr> Executor::toUnique(const ExecutionState &state, 
-                             ref<Expr> &e) {
-  e = simplifyExpr(state, e);
-  ref<Expr> result = e;
+ref<Expr> Executor::toUnique(const ExecutionState &state, ref<Expr> &e)
+{
+    e = simplifyExpr(state, e);
+    ref<Expr> result = e;
 
-  if (!isa<ConstantExpr>(e)) {
+    if (isa<ConstantExpr>(e)) {
+        return result;
+    }
+
     ref<ConstantExpr> value;
     bool isTrue = false;
 
-    solver->setTimeout(coreSolverTimeout);      
-    if (solver->getValue(state, e, value) &&
-        solver->mustBeTrue(state,
-                simplifyExpr(state, EqExpr::create(e, value)), isTrue) &&
-        isTrue)
-      result = value;
-    solver->setTimeout(0);
-  }
+    if (concolicMode) {
+        ConstantExpr *ce = dyn_cast<ConstantExpr>(state.concolics.evaluate(e));
+        assert(ce && "Must be concrete");
+        value = ce;
+    } else {
+        solver->setTimeout(coreSolverTimeout);      
+        if (solver->getValue(state, e, value) &&
+            solver->mustBeTrue(state,
+                    simplifyExpr(state, EqExpr::create(e, value)), isTrue) &&
+            isTrue) {
+            result = value;
+        }
+        solver->setTimeout(0);
+    } 
+
   
-  return result;
+    return result;
 }
 
 
@@ -1370,10 +1380,17 @@ Executor::toConstant(ExecutionState &state,
     return CE;
 
   ref<ConstantExpr> value;
-  bool success = solver->getValue(state, e, value);
-  assert(success && "FIXME: Unhandled solver failure");
-  (void) success;
 
+  if (concolicMode) {
+      ConstantExpr *ce = dyn_cast<ConstantExpr>(state.concolics.evaluate(e));
+      assert(ce && "Must be concrete");
+      value = ce;
+  } else {
+      bool success = solver->getValue(state, e, value);
+      assert(success && "FIXME: Unhandled solver failure");
+      (void) success;
+  }
+    
   std::string str;
   llvm::raw_string_ostream os(str);
   os << "silently concretizing (reason: " << reason << ") expression " << e
@@ -1399,9 +1416,16 @@ Executor::toConstantSilent(ExecutionState &state,
     return CE;
 
   ref<ConstantExpr> value;
-  bool success = solver->getValue(state, e, value);
-  assert(success && "FIXME: Unhandled solver failure");
-  (void) success;
+
+  if (concolicMode) {
+      ConstantExpr *ce = dyn_cast<ConstantExpr>(state.concolics.evaluate(e));
+      assert(ce && "Must be concrete");
+      value = ce;
+  } else {
+      bool success = solver->getValue(state, e, value);
+      assert(success && "FIXME: Unhandled solver failure");
+      (void) success;
+  }
 
   return value;
 }
