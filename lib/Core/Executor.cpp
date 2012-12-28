@@ -1350,9 +1350,9 @@ ref<Expr> Executor::toUnique(const ExecutionState &state, ref<Expr> &e)
     bool isTrue = false;
 
     if (concolicMode) {
-        ConstantExpr *ce = dyn_cast<ConstantExpr>(state.concolics.evaluate(e));
-        assert(ce && "Must be concrete");
-        value = ce;
+        ref<Expr> evalResult = state.concolics.evaluate(e);
+        assert(isa<ConstantExpr>(evalResult) && "Must be concrete");
+        value = dyn_cast<ConstantExpr>(evalResult);
     } else {
         solver->setTimeout(coreSolverTimeout);      
         if (solver->getValue(state, e, value) &&
@@ -1383,9 +1383,9 @@ Executor::toConstant(ExecutionState &state,
   ref<ConstantExpr> value;
 
   if (concolicMode) {
-      ConstantExpr *ce = dyn_cast<ConstantExpr>(state.concolics.evaluate(e));
-      assert(ce && "Must be concrete");
-      value = ce;
+      ref<Expr> evalResult = state.concolics.evaluate(e);
+      assert(isa<ConstantExpr>(evalResult) && "Must be concrete");
+      value = dyn_cast<ConstantExpr>(evalResult);
   } else {
       bool success = solver->getValue(state, e, value);
       assert(success && "FIXME: Unhandled solver failure");
@@ -1419,9 +1419,9 @@ Executor::toConstantSilent(ExecutionState &state,
   ref<ConstantExpr> value;
 
   if (concolicMode) {
-      ConstantExpr *ce = dyn_cast<ConstantExpr>(state.concolics.evaluate(e));
-      assert(ce && "Must be concrete");
-      value = ce;
+      ref<Expr> evalResult = state.concolics.evaluate(e);
+      assert(isa<ConstantExpr>(evalResult) && "Must be concrete");
+      value = dyn_cast<ConstantExpr>(evalResult);
   } else {
       bool success = solver->getValue(state, e, value);
       assert(success && "FIXME: Unhandled solver failure");
