@@ -374,6 +374,8 @@ Executor::Executor(const InterpreterOptions &opts, InterpreterHandler *ih, Execu
 #endif
   }
 
+  //Mandatory for AddressSpace
+  exprSimplifier = new BitfieldSimplifier;
 }
 
 
@@ -434,15 +436,25 @@ Executor::~Executor() {
 
 ref<Expr> Executor::simplifyExpr(const ExecutionState &s, ref<Expr> e)
 {
-    if(exprSimplifier) {
+    if(UseExprSimplifier) {
+        //*klee_message_stream << "Simpl hits:" << exprSimplifier->m_cacheHits
+        //                     << " misses:" << exprSimplifier->m_cacheMisses << "\n";
+
         ref<Expr> simplified = exprSimplifier->simplify(e);
 
         if (ValidateSimplifier) {
             bool isEqual;
-            ref<Expr> eq = EqExpr::create(simplified, e);
-            assert(solver->mustBeTrue(s, eq, isEqual));
+
+            if (concolicMode) {
+                ref<Expr> originalConcrete = s.concolics.evaluate(e);
+                ref<Expr> simplifiedConcrete = s.concolics.evaluate(simplified);
+                isEqual = originalConcrete == simplifiedConcrete;
+            } else {
+                ref<Expr> eq = EqExpr::create(simplified, e);
+                assert(solver->mustBeTrue(s, eq, isEqual));
+            }
+
             assert(isEqual && "Original and simplified expression must be equal");
-            assert(!concolicMode && "Not tested in concolic mode");
         }
 
         return simplified;
