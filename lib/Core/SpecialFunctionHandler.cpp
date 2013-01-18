@@ -59,38 +59,9 @@ namespace {
 ///
 
 
-
-// FIXME: We are more or less committed to requiring an intrinsic
-// library these days. We can move some of this stuff there,
-// especially things like realloc which have complicated semantics
-// w.r.t. forking. Among other things this makes delayed query
-// dispatch easier to implement.
-static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
-#define add(name, handler, ret) { name, \
-                                  &SpecialFunctionHandler::handler, \
-                                  false, ret, false }
-#define addDNR(name, handler) { name, \
-                                &SpecialFunctionHandler::handler, \
-                                true, false, false }
-
-  add("klee_get_value", handleGetValue, true),
-  add("klee_make_symbolic", handleMakeSymbolic, false),
-
-  //XXX: S2E doesn't need the special function handlers of KLEE,
-  //they got removed 
-
-  // clang -fsanitize=unsigned-integer-overflow
-  add("__ubsan_handle_add_overflow", handleAddOverflow, false),
-  add("__ubsan_handle_sub_overflow", handleSubOverflow, false),
-  add("__ubsan_handle_mul_overflow", handleMulOverflow, false),
-  add("__ubsan_handle_divrem_overflow", handleDivRemOverflow, false),
-
-#undef addDNR
-#undef add  
-};
-
+//XXX: S2E does not use the special function handlers
 SpecialFunctionHandler::const_iterator SpecialFunctionHandler::begin() {
-  return SpecialFunctionHandler::const_iterator(handlerInfo);
+  return SpecialFunctionHandler::const_iterator(0);
 }
 
 SpecialFunctionHandler::const_iterator SpecialFunctionHandler::end() {
@@ -111,7 +82,7 @@ SpecialFunctionHandler::const_iterator& SpecialFunctionHandler::const_iterator::
 }
 
 int SpecialFunctionHandler::size() {
-	return sizeof(handlerInfo)/sizeof(handlerInfo[0]);
+    return 0;
 }
 
 SpecialFunctionHandler::SpecialFunctionHandler(Executor &_executor) 
@@ -119,45 +90,9 @@ SpecialFunctionHandler::SpecialFunctionHandler(Executor &_executor)
 
 
 void SpecialFunctionHandler::prepare() {
-  unsigned N = size();
-
-  for (unsigned i=0; i<N; ++i) {
-    HandlerInfo &hi = handlerInfo[i];
-    Function *f = executor.kmodule->module->getFunction(hi.name);
-    
-    // No need to create if the function doesn't exist, since it cannot
-    // be called in that case.
-  
-    if (f && (!hi.doNotOverride || f->isDeclaration())) {
-      // Make sure NoReturn attribute is set, for optimization and
-      // coverage counting.
-      if (hi.doesNotReturn)
-#if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
-        f->addFnAttr(Attribute::NoReturn);
-#elif LLVM_VERSION_CODE >= LLVM_VERSION(3, 2)
-        f->addFnAttr(Attributes::NoReturn);
-#else
-        f->addFnAttr(Attribute::NoReturn);
-#endif
-
-      // Change to a declaration since we handle internally (simplifies
-      // module and allows deleting dead code).
-      if (!f->isDeclaration())
-        f->deleteBody();
-    }
-  }
 }
 
 void SpecialFunctionHandler::bind() {
-  unsigned N = sizeof(handlerInfo)/sizeof(handlerInfo[0]);
-
-  for (unsigned i=0; i<N; ++i) {
-    HandlerInfo &hi = handlerInfo[i];
-    Function *f = executor.kmodule->module->getFunction(hi.name);
-    
-    if (f && (!hi.doNotOverride || f->isDeclaration()))
-      handlers[f] = std::make_pair(hi.handler, hi.hasReturnValue);
-  }
 }
 
 void SpecialFunctionHandler::addUHandler(llvm::Function* f, FunctionHandler h)
