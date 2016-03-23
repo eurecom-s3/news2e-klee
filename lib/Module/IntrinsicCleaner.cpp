@@ -169,6 +169,7 @@ void IntrinsicCleanerPass::replaceIntrinsicAdd(Module &M, CallInst *CI)
 
     Function *f;
     switch(itype->getBitWidth()) {
+        case  8: f = M.getFunction("uaddb"); break;
         case 16: f = M.getFunction("uadds"); break;
         case 32: f = M.getFunction("uadd"); break;
         case 64: f = M.getFunction("uaddl"); break;
@@ -256,6 +257,7 @@ bool IntrinsicCleanerPass::runOnModule(Module &M)
 {
     bool dirty = true;
 
+    injectIntrinsicAddImplementation(M, "uaddb", 8);
     injectIntrinsicAddImplementation(M, "uadds", 16);
     injectIntrinsicAddImplementation(M, "uadd", 32);
     injectIntrinsicAddImplementation(M, "uaddl", 64);
