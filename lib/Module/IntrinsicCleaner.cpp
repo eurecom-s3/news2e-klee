@@ -169,10 +169,14 @@ void IntrinsicCleanerPass::replaceIntrinsicAdd(Module &M, CallInst *CI)
 
     Function *f;
     switch(itype->getBitWidth()) {
-        case 16: f = M.getFunction("uadds"); break;
-        case 32: f = M.getFunction("uadd"); break;
-        case 64: f = M.getFunction("uaddl"); break;
-        default: assert(false && "Invalid intrinsic type");
+        case  8: f = M.getFunction("uadd_i8"); break;
+        case 16: f = M.getFunction("uadd_i16"); break;
+        case 32: f = M.getFunction("uadd_i32"); break;
+        case 64: f = M.getFunction("uadd_i64"); break;
+        default: 
+            llvm::errs() << "Invalid intrinsic type " << *itype << '\n';
+            llvm::errs() << *CI << '\n';
+            assert(false && "Invalid intrinsic type");
     }
 
     assert(f && "Could not find intrinsic replacements for add with overflow");
@@ -256,9 +260,10 @@ bool IntrinsicCleanerPass::runOnModule(Module &M)
 {
     bool dirty = true;
 
-    injectIntrinsicAddImplementation(M, "uadds", 16);
-    injectIntrinsicAddImplementation(M, "uadd", 32);
-    injectIntrinsicAddImplementation(M, "uaddl", 64);
+    injectIntrinsicAddImplementation(M, "uadd_i8", 8);
+    injectIntrinsicAddImplementation(M, "uadd_i16", 16);
+    injectIntrinsicAddImplementation(M, "uadd_i32", 32);
+    injectIntrinsicAddImplementation(M, "uadd_i64", 64);
 
     for (Module::iterator f = M.begin(), fe = M.end(); f != fe; ++f)
         for (Function::iterator b = f->begin(), be = f->end(); b != be;)
