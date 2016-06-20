@@ -38,12 +38,29 @@ public:
   inline void unset(unsigned idx) { bits[idx/32] &= ~(1<<(idx&0x1F)); }
   inline void set(unsigned idx, bool value) { if (value) set(idx); else unset(idx); }
 
-  bool isAllZeros(unsigned size) {
-    for(unsigned i = 0; i < size/32; ++i)
+  inline bool isAllZeros(unsigned start, unsigned size) {
+    const unsigned end = start + size - 1;
+    const uint32_t start_mask = ~((1 << (start & 0x1F)) - 1);
+    const uint32_t end_mask = (1 << (end & 0x1F)) - 1;
+    
+    //Handle the case where start and end are in the same array word
+    if (start / 32 == end / 32) {
+        return (bits[start / 32] & (start_mask & end_mask)) == 0;
+    }
+
+    //Handle the case where start and end are in different words
+    if ((bits[start / 32] & start_mask) != 0)
+        return false;
+
+    for(unsigned i = (start + 31) / 32; i < end / 32; ++i)
       if(bits[i] != 0)
         return false;
-    uint32_t mask = (1 << (size&0x1F)) - 1;
-    return (bits[size/32] & mask) == 0;
+
+    return (bits[end / 32] & end_mask) == 0;
+  }
+
+  bool isAllZeros(unsigned size) {
+      return isAllZeros(0, size);
   }
 
   bool isAllOnes(unsigned size) {
