@@ -236,11 +236,7 @@ public:
         return true;
 
     unsigned size = Expr::getMinBytesForWidth(width);
-    for(unsigned i = 0; i < size; ++i) {
-      if(!isByteConcrete(offset + i))
-        return false;
-    }
-    return true;
+    return concreteMask->isAllZeros(offset, size);
   }
 
   const uint8_t *getConcreteStore(bool allowSymbolic = false) const;
