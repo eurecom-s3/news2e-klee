@@ -24,10 +24,13 @@
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Value.h>
 #else
+
 #include <llvm/Function.h>
 #include <llvm/Instruction.h>
 #include <llvm/Value.h>
 #endif
+
+#include "klee-c/klee.h"
 
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
@@ -618,4 +621,8 @@ void ObjectState::print() {
   for (const UpdateNode *un=updates.head; un; un=un->next) {
     llvm::errs() << "\t\t[" << un->index << "] = " << un->value << "\n";
   }
+}
+
+bool klee_ObjectState_IsConcrete(ObjectState* os, unsigned offset, unsigned bit_size) {
+    return os->isConcrete(offset, bit_size);
 }
