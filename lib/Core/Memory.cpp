@@ -604,3 +604,19 @@ void ObjectState::print() {
 bool klee_ObjectState_IsConcrete(ObjectState* os, unsigned offset, unsigned bit_size) {
     return os->isConcrete(offset, bit_size);
 }
+
+bool klee_ObjectState_ReadConcrete(ObjectState* self, unsigned offset, uint8_t* out, unsigned size) {
+	if (!self->isConcrete(offset, size * 8)) {
+		return false;
+	}
+
+	memcpy(out, static_cast<uint8_t *>(self->getConcreteStore(true)) + offset, size);
+	return true;
+}
+
+void klee_ObjectState_WriteConcrete(ObjectState* self, unsigned offset, const uint8_t* data, unsigned size)
+{
+	for (unsigned i = 0; i < size; ++i) {
+		self->write8(offset + i, data[i]);
+	}
+}
