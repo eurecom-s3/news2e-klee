@@ -247,7 +247,7 @@ public:
         return true;
 
     unsigned size = Expr::getMinBytesForWidth(width);
-    return concreteMask->isAllZeros(offset, size);
+    return concreteMask->isAllOnes(offset, size);
   }
 
   const uint8_t *getConcreteStore(bool allowSymbolic = false) const;
