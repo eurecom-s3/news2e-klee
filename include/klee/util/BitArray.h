@@ -40,36 +40,55 @@ public:
 
   inline bool isAllZeros(unsigned start, unsigned size) {
     const unsigned end = start + size - 1;
-    const uint32_t start_mask = ~((1 << (start & 0x1F)) - 1);
-    const uint32_t end_mask = (1 << (end & 0x1F)) - 1;
+    const unsigned word_width = sizeof(*bits) * 8;
+    const uint32_t start_mask = ~((1 << (start % word_width)) - 1);
+    const uint32_t end_mask = (1 << ((end + 1) & word_width)) - 1;
     
     //Handle the case where start and end are in the same array word
-    if (start / 32 == end / 32) {
-        return (bits[start / 32] & (start_mask & end_mask)) == 0;
+    if (start / word_width == end / word_width) {
+        return (bits[start / word_width] & (start_mask & end_mask)) == 0;
     }
 
     //Handle the case where start and end are in different words
-    if ((bits[start / 32] & start_mask) != 0)
+    if ((bits[start / word_width] & start_mask) != 0)
         return false;
 
-    for(unsigned i = (start + 31) / 32; i < end / 32; ++i)
+    for(unsigned i = (start + word_width - 1) / word_width; i < (end - word_width + 1) / word_width; ++i)
       if(bits[i] != 0)
         return false;
 
-    return (bits[end / 32] & end_mask) == 0;
+    return (bits[end / word_width] & end_mask) == 0;
   }
 
-  bool isAllZeros(unsigned size) {
+  inline bool isAllZeros(unsigned size) {
       return isAllZeros(0, size);
   }
 
-  bool isAllOnes(unsigned size) {
-    for(unsigned i = 0; i < size/32; ++i)
-      if(bits[i] != 0xffffffff)
-        return false;
-    uint32_t mask = (1 << (size&0x1F)) - 1;
-    return (bits[size/32] & mask) == mask;
+  inline bool isAllOnes(unsigned size) {
+	  return isAllOnes(0, size);
   }
+
+  inline bool isAllOnes(unsigned start, unsigned size) {
+      const unsigned end = start + size - 1;
+      const unsigned word_width = sizeof(*bits) * 8;
+      const uint32_t start_mask = ~((1 << (start % word_width)) - 1);
+      const uint32_t end_mask = (1 << ((end + 1) % word_width)) - 1;
+
+      //Handle the case where start and end are in the same array word
+      if (start / word_width == end / word_width) {
+          return ((~bits[start / word_width]) & (start_mask & end_mask)) == 0;
+      }
+
+      //Handle the case where start and end are in different words
+      if (((~bits[start / word_width]) & start_mask) != 0)
+          return false;
+
+      for(unsigned i = (start + word_width - 1) / word_width; i < (end - word_width + 1) / word_width; ++i)
+        if(~bits[i] != 0)
+          return false;
+
+      return ((~bits[end / word_width] & end_mask)) == 0;
+    }
 };
 
 } // End klee namespace
