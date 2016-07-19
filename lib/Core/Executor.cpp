@@ -3600,12 +3600,14 @@ void Executor::executeMemoryOperation(ExecutionState &state,
                   offset = toConstantSilent(state, offset);
                   value  = toConstantSilent(state,  value);
               } else {
-                  std::stringstream ss;
-                  ss << "write to always concrete memory name:" << mo->name <<
+                  std::string str;
+                  llvm::raw_string_ostream os(str);
+                  os << "write to always concrete memory name:" << mo->name <<
                           " offset=" << offset << " value=" << value;
+                  os.flush();
 
-                  offset = toConstant(state, offset, ss.str().c_str());
-                  value  = toConstant(state,  value, ss.str().c_str());
+                  offset = toConstant(state, offset, os.str().c_str());
+                  value  = toConstant(state,  value, os.str().c_str());
               }
           }
           wos->write(offset, value);
@@ -3615,11 +3617,13 @@ void Executor::executeMemoryOperation(ExecutionState &state,
             if(mo->isValueIgnored) {
                 offset = toConstantSilent(state, offset);
             } else {
-                std::stringstream ss;
-                ss << "Read from always concrete memory name:" << mo->name <<
+                std::string str;
+                llvm::raw_string_ostream os(str);
+                os << "Read from always concrete memory name:" << mo->name <<
                         " offset=" << offset;
+                os.flush();
 
-                offset = toConstant(state, offset, ss.str().c_str());
+                offset = toConstant(state, offset, os.str().c_str());
             }
         }
         ref<Expr> result = os->read(offset, type);
