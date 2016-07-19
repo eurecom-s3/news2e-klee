@@ -380,18 +380,26 @@ BitfieldSimplifier::ExprBitsInfo BitfieldSimplifier::doSimplifyBits(
     return std::make_pair(e, rbits);
 }
 
-ref<Expr> BitfieldSimplifier::simplify(ref<Expr> e)
+ref<Expr> BitfieldSimplifier::simplify(ref<Expr> e, uint64_t *knownZeroBits)
 {
     bool cste = isa<ConstantExpr>(e);
     if (PrintSimplifier && !cste) {
         klee_message("BEFORE SIMPL: %s", exprToString(e).c_str());
     }
 
-    ref<Expr> ret = doSimplifyBits(e, 0).first;
-
-    if (PrintSimplifier && !cste) {
-        klee_message("AFTER SIMPL: %s", exprToString(ret).c_str());
+    if (cste) {
+        return e;
     }
 
-    return ret;
+    ExprBitsInfo ret = doSimplifyBits(e, 0);
+
+    if (PrintSimplifier && !cste) {
+        klee_message("AFTER SIMPL: %s", exprToString(ret.first).c_str());
+    }
+
+    if (knownZeroBits) {
+        *knownZeroBits = ret.second.knownZeroBits;
+    }
+
+    return ret.first;
 }
