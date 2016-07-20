@@ -582,8 +582,6 @@ public:
     return removedStates;
   }
 
-  TimingSolver *getSolver() const {return solver;}
-
   /**
    * This method is needed to re-set log files when
    * S2E forked a new process.
