@@ -582,8 +582,7 @@ public:
     return removedStates;
   }
 
-  Solver *getSolver() const;
-  void initializeSolver();
+  TimingSolver *getSolver() const {return solver;}
 };
 
 } // End klee namespace
