@@ -102,7 +102,8 @@ namespace {
 }
 
 namespace llvm {
-extern void CreateOptimizePasses(PassManagerBase&, Module*);
+extern void CreateOptimizePasses(PassManager&, Module*);
+extern void CreateOptimizePasses(FunctionPassManager& Passes, Module* M);
 }
 
 namespace klee {

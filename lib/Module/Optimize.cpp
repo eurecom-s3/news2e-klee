@@ -44,6 +44,7 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Support/PluginLoader.h"
+
 using namespace llvm;
 
 // Don't verify at the end
@@ -80,22 +81,34 @@ static cl::alias A1("S", cl::desc("Alias for --strip-debug"),
 
 // A utility function that adds a pass to the pass manager but will also add
 // a verifier pass after if we're supposed to verify.
-static inline void addPass(PassManagerBase &PM, Pass *P) {
-  if(dynamic_cast<FunctionPassManager*>(&PM) && !dynamic_cast<FunctionPass*>(P))
-      return;
+static inline void addPassInternal(PassManagerBase &PM, Pass *P) {
+	// Add the pass to the pass manager...
+	PM.add(P);
 
-  // Add the pass to the pass manager...
-  PM.add(P);
+	// If we are verifying all of the intermediate steps, add the verifier...
+	if (VerifyEach)
+	    PM.add(createVerifierPass());
+}
 
-  // If we are verifying all of the intermediate steps, add the verifier...
-  if (VerifyEach)
-    PM.add(createVerifierPass());
+static inline void addPass(FunctionPassManager &FPM, Pass *P) {
+	if (P->getPassKind() != PT_Function &&
+	    P->getPassKind() != PT_BasicBlock)
+	{
+		return;
+	}
+
+	addPassInternal(FPM, P);
+}
+
+static inline void addPass(PassManager &PM, Pass *P) {
+	addPassInternal(PM, P);
 }
 
 namespace llvm {
 
 
-static void AddStandardCompilePasses(PassManagerBase &PM) {
+template<class T>
+static void AddStandardCompilePasses(T &PM) {
   PM.add(createVerifierPass());                  // Verify that input is correct
 
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 0)
@@ -166,8 +179,8 @@ static void AddStandardCompilePasses(PassManagerBase &PM) {
 /// Optimize - Perform link time optimizations. This will run the scalar
 /// optimizations, any loaded plugin-optimization modules, and then the
 /// inter-procedural optimizations if applicable.
-void CreateOptimizePasses(PassManagerBase& Passes, Module* M) {
-
+template<class T>
+static void CreateOptimizePassesInternal(T& Passes, Module* M) {
   // Instantiate the pass manager to organize the passes.
   //PassManager Passes;
 
@@ -295,6 +308,17 @@ void CreateOptimizePasses(PassManagerBase& Passes, Module* M) {
 
   // Run our queue of passes all at once now, efficiently.
   //Passes.run(*M);
+}
+
+//We have two  definitions of the function with overloaded arguments,
+//as dynamic_cast to tell the PassManager types apart needs RTTI, and
+//we don't want that.
+void CreateOptimizePasses(PassManager& Passes, Module* M) {
+	CreateOptimizePassesInternal(Passes, M);
+}
+
+void CreateOptimizePasses(FunctionPassManager& Passes, Module* M) {
+	CreateOptimizePassesInternal(Passes, M);
 }
 
 }
