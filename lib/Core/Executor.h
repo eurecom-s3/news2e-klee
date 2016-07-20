@@ -515,6 +515,15 @@ public:
   setModule(llvm::Module *module, const ModuleOptions &opts,
             bool createStatsTracker = true);
 
+  /**
+   * Get the KModule.
+   * Needed by external searchers (S2EMergingSearcher).
+   * @return The internal KModule
+   */
+  KModule* getKModule() {
+	  return kmodule;
+  }
+
   virtual void useSeeds(const std::vector<struct KTest *> *seeds) { 
     usingSeeds = seeds;
   }
