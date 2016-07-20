@@ -11,6 +11,7 @@
 #define KLEE_SEARCHER_H
 
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/CommandLine.h"
 #include <vector>
 #include <set>
 #include <map>
@@ -27,6 +28,8 @@ namespace klee {
   template<class T> class DiscretePDF;
   class ExecutionState;
   class Executor;
+
+  extern llvm::cl::opt<bool> DebugLogMerge;
 
   class Searcher {
   public:

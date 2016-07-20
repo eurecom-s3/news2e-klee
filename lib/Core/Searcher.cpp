@@ -33,7 +33,6 @@
 #include "llvm/Instructions.h"
 #include "llvm/Module.h"
 #endif
-#include "llvm/Support/CommandLine.h"
 
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 5)
 #include "llvm/Support/CallSite.h"
@@ -48,13 +47,11 @@
 using namespace klee;
 using namespace llvm;
 
-namespace {
-  cl::opt<bool>
-  DebugLogMerge("debug-log-merge");
-}
 
 namespace klee {
   extern RNG theRNG;
+  llvm::cl::opt<bool>
+  DebugLogMerge("debug-log-merge");
 }
 
 Searcher::~Searcher() {
