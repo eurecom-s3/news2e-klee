@@ -333,7 +333,7 @@ namespace klee {
 
 Executor::Executor(const InterpreterOptions &opts, InterpreterHandler *ih, ExecutionEngine *engine)
     : Interpreter(opts), kmodule(0), interpreterHandler(ih), searcher(0),
-      externalDispatcher(new ExternalDispatcher(engine)), statsTracker(0),
+      externalDispatcher(new ExternalDispatcher(engine)), solver(NULL), statsTracker(0),
       pathWriter(0), symPathWriter(0), specialFunctionHandler(0),
       processTree(0), replayKTest(0), replayPath(0), usingSeeds(0),
       atMemoryLimit(false), inhibitForking(false), haltExecution(false),
@@ -344,19 +344,9 @@ Executor::Executor(const InterpreterOptions &opts, InterpreterHandler *ih, Execu
       debugInstFile(0), debugLogBuffer(debugBufferString) {
 
   if (coreSolverTimeout) UseForkedCoreSolver = true;
-  Solver *coreSolver = klee::createCoreSolver(CoreSolverToUse);
-  if (!coreSolver) {
-    llvm::errs() << "Failed to create core solver\n";
-    exit(1);
-  }
-  Solver *solver = constructSolverChain(
-      coreSolver,
-      interpreterHandler->getOutputFilename(ALL_QUERIES_SMT2_FILE_NAME),
-      interpreterHandler->getOutputFilename(SOLVER_QUERIES_SMT2_FILE_NAME),
-      interpreterHandler->getOutputFilename(ALL_QUERIES_PC_FILE_NAME),
-      interpreterHandler->getOutputFilename(SOLVER_QUERIES_PC_FILE_NAME));
 
-  this->solver = new TimingSolver(solver, EqualitySubstitution);
+  initializeSolver();
+
   memory = new MemoryManager(&arrayCache);
 
   if (optionIsSet(DebugPrintInstructions, FILE_ALL) ||
@@ -376,6 +366,28 @@ Executor::Executor(const InterpreterOptions &opts, InterpreterHandler *ih, Execu
 
   //Mandatory for AddressSpace
   exprSimplifier = new BitfieldSimplifier;
+}
+
+void Executor::initializeSolver() {
+  if (this->solver) {
+      delete this->solver;
+      this->solver = NULL;
+  }
+
+  Solver *coreSolver = klee::createCoreSolver(CoreSolverToUse);
+  if (!coreSolver) {
+    llvm::errs() << "Failed to create core solver\n";
+    exit(1);
+  }
+
+  Solver *solver = constructSolverChain(
+      coreSolver,
+      interpreterHandler->getOutputFilename(ALL_QUERIES_SMT2_FILE_NAME),
+      interpreterHandler->getOutputFilename(SOLVER_QUERIES_SMT2_FILE_NAME),
+      interpreterHandler->getOutputFilename(ALL_QUERIES_PC_FILE_NAME),
+      interpreterHandler->getOutputFilename(SOLVER_QUERIES_PC_FILE_NAME));
+
+  this->solver = new TimingSolver(solver, EqualitySubstitution);
 }
 
 
