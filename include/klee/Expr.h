@@ -473,6 +473,7 @@ private:
 
   ~Array();
 
+public:
   /// Array - Construct a new array object.
   ///
   /// \param _name - The name for this array. Names should generally be unique
@@ -485,7 +486,6 @@ private:
         const ref<ConstantExpr> *constantValuesEnd = 0,
         Expr::Width _domain = Expr::Int32, Expr::Width _range = Expr::Int8);
 
-public:
   bool isSymbolicArray() const { return constantValues.empty(); }
   bool isConstantArray() const { return !isSymbolicArray(); }
 
