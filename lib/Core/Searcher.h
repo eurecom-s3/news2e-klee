@@ -45,9 +45,11 @@ namespace klee {
 
     // prints name of searcher as a klee_message()
     // TODO: could probably make prettier or more flexible
-    virtual void printName(llvm::raw_ostream &os) {
-      os << "<unnamed searcher>\n";
+    virtual void printName(llvm::raw_ostream &os) const {
+      os << getName() << '\n';
     }
+
+    virtual const std::string& getName() const = 0;
 
     // pgbovine - to be called when a searcher gets activated and
     // deactivated, say, by a higher-level searcher; most searchers
@@ -81,11 +83,15 @@ namespace klee {
       NURS_CPICnt,
       NURS_QC
     };
+
+    ///LLVM style RTTI
+    static bool classof(const Searcher* s) {return true;}
   };
 
   class DFSSearcher : public Searcher {
     std::vector<ExecutionState*> states;
     ExecutionState *currentState;
+    static const std::string NAME;
 
   public:
     DFSSearcher() {
@@ -97,13 +103,15 @@ namespace klee {
                 const std::set<ExecutionState*> &addedStates,
                 const std::set<ExecutionState*> &removedStates);
     bool empty() { return states.empty(); }
-    void printName(llvm::raw_ostream &os) {
-      os << "DFSSearcher\n";
-    }
+    virtual const std::string& getName() const {return NAME;}
+
+    ///LLVM style RTTI
+    static bool classof(const Searcher* s) {return s->getName() ==  NAME;}
   };
 
   class BFSSearcher : public Searcher {
     std::deque<ExecutionState*> states;
+    static const std::string NAME;
 
   public:
     ExecutionState &selectState();
@@ -111,13 +119,16 @@ namespace klee {
                 const std::set<ExecutionState*> &addedStates,
                 const std::set<ExecutionState*> &removedStates);
     bool empty() { return states.empty(); }
-    void printName(llvm::raw_ostream &os) {
-      os << "BFSSearcher\n";
-    }
+
+    virtual const std::string& getName() const {return NAME;}
+
+	///LLVM style RTTI
+	static bool classof(const Searcher* s) {return s->getName() ==  NAME;}
   };
 
   class RandomSearcher : public Searcher {
     std::vector<ExecutionState*> states;
+    static const std::string NAME;
 
   public:
     ExecutionState &selectState();
@@ -125,9 +136,11 @@ namespace klee {
                 const std::set<ExecutionState*> &addedStates,
                 const std::set<ExecutionState*> &removedStates);
     bool empty() { return states.empty(); }
-    void printName(llvm::raw_ostream &os) {
-      os << "RandomSearcher\n";
-    }
+
+    virtual const std::string& getName() const {return NAME;}
+
+    ///LLVM style RTTI
+	static bool classof(const Searcher* s) {return s->getName() == NAME;}
   };
 
   class WeightedRandomSearcher : public Searcher {
@@ -145,6 +158,7 @@ namespace klee {
     DiscretePDF<ExecutionState*> *states;
     WeightType type;
     bool updateWeights;
+    static const std::string NAME;
     
     double getWeight(ExecutionState*);
 
@@ -157,8 +171,8 @@ namespace klee {
                 const std::set<ExecutionState*> &addedStates,
                 const std::set<ExecutionState*> &removedStates);
     bool empty();
-    void printName(llvm::raw_ostream &os) {
-      os << "WeightedRandomSearcher::";
+    virtual void printName(llvm::raw_ostream &os) const {
+      os << getName() << "::";
       switch(type) {
       case Depth              : os << "Depth\n"; return;
       case QueryCost          : os << "QueryCost\n"; return;
@@ -169,10 +183,15 @@ namespace klee {
       default                 : os << "<unknown type>\n"; return;
       }
     }
+
+    virtual const std::string& getName() const {return NAME;}
+    ///LLVM style RTTI
+	static bool classof(const Searcher* s) {return s->getName() == NAME;}
   };
 
   class RandomPathSearcher : public Searcher {
     Executor &executor;
+    static const std::string NAME;
 
   public:
     RandomPathSearcher(Executor &_executor);
@@ -183,9 +202,10 @@ namespace klee {
                 const std::set<ExecutionState*> &addedStates,
                 const std::set<ExecutionState*> &removedStates);
     bool empty();
-    void printName(llvm::raw_ostream &os) {
-      os << "RandomPathSearcher\n";
-    }
+
+    virtual const std::string& getName() const {return NAME;}
+	///LLVM style RTTI
+	static bool classof(const Searcher* s) {return s->getName() == NAME;}
   };
 
   class MergingSearcher : public Searcher {
@@ -193,6 +213,7 @@ namespace klee {
     std::set<ExecutionState*> statesAtMerge;
     Searcher *baseSearcher;
     llvm::Function *mergeFunction;
+    static const std::string NAME;
 
   private:
     llvm::Instruction *getMergePoint(ExecutionState &es);
@@ -206,9 +227,10 @@ namespace klee {
                 const std::set<ExecutionState*> &addedStates,
                 const std::set<ExecutionState*> &removedStates);
     bool empty() { return baseSearcher->empty() && statesAtMerge.empty(); }
-    void printName(llvm::raw_ostream &os) {
-      os << "MergingSearcher\n";
-    }
+
+    virtual const std::string& getName() const {return NAME;}
+	///LLVM style RTTI
+	static bool classof(const Searcher* s) {return s->getName() == NAME;}
   };
 
   class BumpMergingSearcher : public Searcher {
@@ -216,6 +238,7 @@ namespace klee {
     std::map<llvm::Instruction*, ExecutionState*> statesAtMerge;
     Searcher *baseSearcher;
     llvm::Function *mergeFunction;
+    static const std::string NAME;
 
   private:
     llvm::Instruction *getMergePoint(ExecutionState &es);
@@ -229,9 +252,10 @@ namespace klee {
                 const std::set<ExecutionState*> &addedStates,
                 const std::set<ExecutionState*> &removedStates);
     bool empty() { return baseSearcher->empty() && statesAtMerge.empty(); }
-    void printName(llvm::raw_ostream &os) {
-      os << "BumpMergingSearcher\n";
-    }
+
+    virtual const std::string& getName() const {return NAME;}
+	///LLVM style RTTI
+	static bool classof(const Searcher* s) {return s->getName() == NAME;}
   };
 
   class BatchingSearcher : public Searcher {
@@ -242,6 +266,7 @@ namespace klee {
     ExecutionState *lastState;
     uint64_t lastStartTime;
     unsigned lastStartInstructions;
+    static const std::string NAME;
 
   public:
     BatchingSearcher(Searcher *baseSearcher, 
@@ -254,19 +279,24 @@ namespace klee {
                 const std::set<ExecutionState*> &addedStates,
                 const std::set<ExecutionState*> &removedStates);
     bool empty() { return baseSearcher->empty(); }
-    void printName(llvm::raw_ostream &os) {
-      os << "<BatchingSearcher> timeBudget: " << timeBudget
+    virtual void printName(llvm::raw_ostream &os) const {
+      os << "<" << NAME << "> timeBudget: " << timeBudget
          << ", instructionBudget: " << instructionBudget
          << ", baseSearcher:\n";
       baseSearcher->printName(os);
-      os << "</BatchingSearcher>\n";
+      os << "</" << NAME << ">\n";
     }
+
+    virtual const std::string& getName() const {return NAME;}
+	///LLVM style RTTI
+	static bool classof(const Searcher* s) {return s->getName() == NAME;}
   };
 
   class IterativeDeepeningTimeSearcher : public Searcher {
     Searcher *baseSearcher;
     double time, startTime;
     std::set<ExecutionState*> pausedStates;
+    static const std::string NAME;
 
   public:
     IterativeDeepeningTimeSearcher(Searcher *baseSearcher);
@@ -277,9 +307,10 @@ namespace klee {
                 const std::set<ExecutionState*> &addedStates,
                 const std::set<ExecutionState*> &removedStates);
     bool empty() { return baseSearcher->empty() && pausedStates.empty(); }
-    void printName(llvm::raw_ostream &os) {
-      os << "IterativeDeepeningTimeSearcher\n";
-    }
+
+    virtual const std::string& getName() const {return NAME;}
+	///LLVM style RTTI
+	static bool classof(const Searcher* s) {return s->getName() == NAME;}
   };
 
   class InterleavedSearcher : public Searcher {
@@ -287,6 +318,7 @@ namespace klee {
 
     searchers_ty searchers;
     unsigned index;
+    static const std::string NAME;
 
   public:
     explicit InterleavedSearcher(const searchers_ty &_searchers);
@@ -297,14 +329,17 @@ namespace klee {
                 const std::set<ExecutionState*> &addedStates,
                 const std::set<ExecutionState*> &removedStates);
     bool empty() { return searchers[0]->empty(); }
-    void printName(llvm::raw_ostream &os) {
-      os << "<InterleavedSearcher> containing "
+    virtual void printName(llvm::raw_ostream &os) const {
+      os << "<" << NAME << "> containing "
          << searchers.size() << " searchers:\n";
-      for (searchers_ty::iterator it = searchers.begin(), ie = searchers.end();
+      for (searchers_ty::const_iterator it = searchers.begin(), ie = searchers.end();
            it != ie; ++it)
         (*it)->printName(os);
-      os << "</InterleavedSearcher>\n";
+      os << "</" << NAME << ">\n";
     }
+    virtual const std::string& getName() const {return NAME;}
+	///LLVM style RTTI
+	static bool classof(const Searcher* s) {return s->getName() == NAME;}
   };
 
 }

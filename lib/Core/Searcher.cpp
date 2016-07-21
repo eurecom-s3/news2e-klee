@@ -54,8 +54,20 @@ namespace klee {
   DebugLogMerge("debug-log-merge");
 }
 
+const std::string DFSSearcher::NAME = "DFSSearcher";
+const std::string BFSSearcher::NAME = "BFSSearcher";
+const std::string RandomSearcher::NAME = "RandomSearcher";
+const std::string WeightedRandomSearcher::NAME = "WeightedRandomSearcher";
+const std::string RandomPathSearcher::NAME = "RandomPathSearcher";
+const std::string BatchingSearcher::NAME = "BatchingSearcher";
+const std::string IterativeDeepeningTimeSearcher::NAME = "IterativeDeepeningTimeSearcher";
+const std::string InterleavedSearcher::NAME = "InterleavedSearcher";
+const std::string MergingSearcher::NAME = "MergingSearcher";
+const std::string BumpMergingSearcher::NAME = "BumpMergingSearcher";
+
 Searcher::~Searcher() {
 }
+
 
 ///
 
