@@ -64,6 +64,8 @@ StackFrame::~StackFrame() {
   delete[] locals; 
 }
 
+const std::string ExecutionState::CLASS_NAME = "klee::ExecutionState";
+
 /***/
 
 ExecutionState::ExecutionState(KFunction *kf) :

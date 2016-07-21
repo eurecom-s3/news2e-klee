@@ -323,6 +323,7 @@ UseExprSimplifier("use-expr-simplifier",
           cl::init(true));
 
 
+const std::string Executor::CLASS_NAME = "klee::Executor";
 
 unsigned Executor::getMaxMemory() { return MaxMemory; }
 bool Executor::getMaxMemoryInhibit() { return MaxMemoryInhibit; }

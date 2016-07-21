@@ -195,6 +195,11 @@ public:
   bool isSpeculative() const {
       return speculative;
   }
+
+  //LLVM style RTTI
+  static const std::string CLASS_NAME;
+  virtual const std::string& getClassName() const {return ExecutionState::CLASS_NAME;}
+  static bool classof(const ExecutionState* s) {return true;}
 };
 }
 

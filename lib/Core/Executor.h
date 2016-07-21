@@ -587,6 +587,11 @@ public:
    * S2E forked a new process.
    */
   void initializeSolver(void);
+
+  //LLVM style RTTI
+  static const std::string CLASS_NAME;
+  virtual const std::string& getClassName() const {return Executor::CLASS_NAME;}
+  static bool classof(const Executor *e) {return true;}
 };
 
 } // End klee namespace
