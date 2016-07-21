@@ -11,6 +11,11 @@
 
 #include "klee/Config/Version.h"
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3, 5)
+#include "llvm/IR/CallSite.h"
+#else
+#include "llvm/Support/CallSite.h"
+#endif
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
@@ -33,7 +38,6 @@
 #include "llvm/LLVMContext.h"
 #include "llvm/Module.h"
 #include "llvm/Type.h"
-#include "llvm/Support/CallSite.h"
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 2)
 #include "llvm/IRBuilder.h"
 #else

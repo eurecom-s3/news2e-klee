@@ -21,7 +21,13 @@ class Function;
 class Module;
 class raw_ostream;
 class raw_fd_ostream;
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3, 4)
+namespace legacy {class FunctionPassManager;}
+#define LLVM_FUNCTION_PASS_MANAGER_NAMESPACE llvm::legacy
+#else
 class FunctionPassManager;
+#define LLVM_FUNCTION_PASS_MANAGER_NAMESPACE llvm
+#endif
 }
 
 namespace klee {
@@ -55,12 +61,12 @@ public:
     bool Optimize;
     bool CheckDivZero;
     bool CheckOvershift;
-    llvm::FunctionPassManager *CustomPasses;
+    LLVM_FUNCTION_PASS_MANAGER_NAMESPACE ::FunctionPassManager *CustomPasses;
 
     ModuleOptions(const std::string& _LibraryDir, 
                   bool _Optimize, bool _CheckDivZero,
                   bool _CheckOvershift,
-                  llvm::FunctionPassManager *_CustomPasses = NULL)
+				  LLVM_FUNCTION_PASS_MANAGER_NAMESPACE ::FunctionPassManager *_CustomPasses = NULL)
       : LibraryDir(_LibraryDir), Optimize(_Optimize), 
         CheckDivZero(_CheckDivZero), CheckOvershift(_CheckOvershift),
         CustomPasses(_CustomPasses) {}
@@ -161,4 +167,5 @@ public:
 
 } // End klee namespace
 
+#undef LLVM_FUNCTION_PASS_MANAGER_NAMESPACE
 #endif
