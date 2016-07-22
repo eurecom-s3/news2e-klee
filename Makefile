@@ -20,7 +20,7 @@ include $(LEVEL)/Makefile.config
 # in the top-level makefile.
 NO_INSTALL=1
 
-DIRS = lib #tools runtime
+DIRS = lib runtime #tools
 EXTRA_DIST = include
 
 # Only build support directories when building unittests.
