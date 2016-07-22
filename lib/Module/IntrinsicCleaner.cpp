@@ -419,6 +419,9 @@ bool IntrinsicCleanerPass::runOnBasicBlock(BasicBlock &b, Module &M) {
                     idx, ConstantInt::get(len->getType(), 1), Twine(), bodyBB);
         BranchInst::Create(headerBB, bodyBB);
         idx->addIncoming(newIdx, bodyBB);
+
+        ii->eraseFromParent();
+
         // Update iterators to continue in the next BB
         i = exitBB->begin();
         ie = exitBB->end();
