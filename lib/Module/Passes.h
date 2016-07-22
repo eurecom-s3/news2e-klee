@@ -101,10 +101,13 @@ public:
   // A function pass version of the above, but only for bswap
 class IntrinsicFunctionCleanerPass : public llvm::FunctionPass {
   static char ID;
+  llvm::IntrinsicLowering* IL;
 
   bool runOnBasicBlock(llvm::BasicBlock &b);
 public:
-  IntrinsicFunctionCleanerPass() : llvm::FunctionPass(ID) {}
+  IntrinsicFunctionCleanerPass(const llvm::DataLayout& DL)
+	: llvm::FunctionPass(ID),
+	  IL(new llvm::IntrinsicLowering(DL)) {}
 
   virtual bool runOnFunction(llvm::Function &f);
 };
