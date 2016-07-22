@@ -82,6 +82,9 @@
 /* LLVM minor version number */
 #undef LLVM_VERSION_MINOR
 
+/* Define if debugging is disabled */
+#undef NDEBUG
+
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 

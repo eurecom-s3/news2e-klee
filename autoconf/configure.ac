@@ -28,9 +28,16 @@ dnl Configure project makefiles
 dnl List every Makefile that exists within your source tree
 AC_CONFIG_HEADERS([include/klee/Config/config.h])
 
+#Include macros from this directory
+AC_CONFIG_MACRO_DIR([m4])
+
+#Enable debug flags if desired
+AX_CHECK_ENABLE_DEBUG([no])
+
 AH_TOP([#ifndef KLEE_CONFIG_CONFIG_H
 #define KLEE_CONFIG_CONFIG_H])
 AH_BOTTOM([#endif])
+
 
 dnl We need to check for the compiler up here to avoid anything else
 dnl starting with a different one.
