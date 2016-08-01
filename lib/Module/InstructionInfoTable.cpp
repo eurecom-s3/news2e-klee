@@ -196,3 +196,30 @@ InstructionInfoTable::getFunctionInfo(const Function *f) const {
     return getInfo(f->begin()->begin());
   }
 }
+
+void InstructionInfoTable::registerFunction(const llvm::Function *f) {
+	  //TODO: This is a hack for S2E. Because functions get registered
+	  //at a later stage (after this class has been initialized), their debug
+	  //information is lacking (on top, since functions are generated,
+	  //no real debug information exists).
+	  //The quick fix here is to generate some dummy information on the fly.
+	unsigned id = infos.size();
+
+	for (llvm::Function::const_iterator fitr = f->begin(), fend = f->end();
+		 fitr != fend;
+		 ++fitr)
+	{
+		for (llvm::BasicBlock::const_iterator bbitr = fitr->begin(), bbend = fitr->end();
+			 bbitr != bbend;
+			 ++bbitr)
+		{
+			infos.insert(std::make_pair(&*bbitr,
+							            InstructionInfo(id++,
+							            /* file = */ "<dummy>",
+										/* line = */ 0,
+										/* assemblyLine = */ 0)));
+		}
+
+	}
+}
+

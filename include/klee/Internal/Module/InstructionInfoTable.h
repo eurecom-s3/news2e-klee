@@ -65,6 +65,13 @@ namespace klee {
     unsigned getMaxID() const;
     const InstructionInfo &getInfo(const llvm::Instruction*) const;
     const InstructionInfo &getFunctionInfo(const llvm::Function*) const;
+    /**
+     * This function registers an LLVM function.
+     * Currently, it will simply add dummy debug information for all of
+     * the function's instructions (as in S2E, functions are generated
+     * from translated code and don't really have debug information).
+     */
+    void registerFunction(const llvm::Function*);
   };
 
 }

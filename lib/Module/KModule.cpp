@@ -582,6 +582,8 @@ KFunction* KModule::updateModuleWithFunction(llvm::Function *f)
     KFunction *kf = new KFunction(f, this);
 
     /* TODO: update InstructionInfoTable here */
+    infos->registerFunction(f);
+
     for (unsigned i=0; i<kf->numInstructions; ++i) {
       KInstruction *ki = kf->instructions[i];
       ki->info = &infos->getInfo(ki->inst);
