@@ -17,6 +17,7 @@ StatisticManager::StatisticManager()
   : enabled(true),
     globalStats(0),
     indexedStats(0),
+	numIndexedStats(0),
     contextStats(0),
     index(0) {
 }
@@ -30,6 +31,7 @@ void StatisticManager::useIndexedStats(unsigned totalIndices) {
   if (indexedStats) delete[] indexedStats;
   indexedStats = new uint64_t[totalIndices * stats.size()];
   memset(indexedStats, 0, sizeof(*indexedStats) * totalIndices * stats.size());
+  numIndexedStats = totalIndices;
 }
 
 void StatisticManager::registerStatistic(Statistic &s) {

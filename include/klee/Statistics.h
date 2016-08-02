@@ -15,6 +15,7 @@
 #include <vector>
 #include <string>
 #include <string.h>
+#include <assert.h>
 
 namespace klee {
   class Statistic;
@@ -43,6 +44,7 @@ namespace klee {
     std::vector<Statistic*> stats;
     uint64_t *globalStats;
     uint64_t *indexedStats;
+    unsigned numIndexedStats;
     StatisticRecord *contextStats;
     unsigned index;
 
@@ -55,10 +57,10 @@ namespace klee {
     StatisticRecord *getContext();
     void setContext(StatisticRecord *sr); /* null to reset */
 
-    void setIndex(unsigned i) { index = i; }
+    void setIndex(unsigned i) { assert(i < numIndexedStats); index = i; }
     unsigned getIndex() { return index; }
     unsigned getNumStatistics() { return stats.size(); }
-    Statistic &getStatistic(unsigned i) { return *stats[i]; }
+    Statistic &getStatistic(unsigned i) { assert(i < numIndexedStats); return *stats[i]; }
     
     void registerStatistic(Statistic &s);
     void incrementStatistic(Statistic &s, uint64_t addend);
@@ -78,6 +80,7 @@ namespace klee {
     if (enabled) {
       globalStats[s.id] += addend;
       if (indexedStats) {
+    	assert(index * stats.size() + s.id < numIndexedStats * stats.size());
         indexedStats[index*stats.size() + s.id] += addend;
         if (contextStats)
           contextStats->data[s.id] += addend;
@@ -136,17 +139,20 @@ namespace klee {
   inline void StatisticManager::incrementIndexedValue(const Statistic &s, 
                                                       unsigned index,
                                                       uint64_t addend) const {
+	assert(index * stats.size() + s.id < numIndexedStats * stats.size());
     indexedStats[index*stats.size() + s.id] += addend;
   }
 
   inline uint64_t StatisticManager::getIndexedValue(const Statistic &s, 
                                                     unsigned index) const {
+	assert(index * stats.size() + s.id < numIndexedStats * stats.size());
     return indexedStats[index*stats.size() + s.id];
   }
 
   inline void StatisticManager::setIndexedValue(const Statistic &s, 
                                                 unsigned index,
                                                 uint64_t value) {
+	assert(index * stats.size() + s.id < numIndexedStats * stats.size());
     indexedStats[index*stats.size() + s.id] = value;
   }
 }
