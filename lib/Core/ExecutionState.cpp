@@ -130,7 +130,10 @@ ExecutionState::ExecutionState(const ExecutionState& state):
     coveredLines(state.coveredLines),
     ptreeNode(state.ptreeNode),
     symbolics(state.symbolics),
-    arrayNames(state.arrayNames)
+    arrayNames(state.arrayNames),
+	concolics(state.concolics),
+	speculative(state.speculative),
+	speculativeCondition(state.speculativeCondition)
 {
   for (unsigned int i=0; i<symbolics.size(); i++)
     symbolics[i].first->refCount++;
