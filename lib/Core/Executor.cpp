@@ -4004,8 +4004,6 @@ bool Executor::getSymbolicSolution(const ExecutionState &state,
   solver->setTimeout(coreSolverTimeout);
 
   ExecutionState tmp(state);
-  //XXX: This fixes a NULL pointer dereference
-  tmp.addressSpace.state = &tmp;
 
   // Go through each byte in every test case and attempt to restrict
   // it to the constraints contained in cexPreferences.  (Note:
