@@ -3244,7 +3244,7 @@ void Executor::callExternalFunction(ExecutionState &state,
   // size we need, but this is faster, and the memory usage isn't significant.
   uint64_t *args = (uint64_t*) alloca(2*sizeof(*args) * (arguments.size() + 1));
   memset(args, 0, 2 * sizeof(*args) * (arguments.size() + 1));
-  unsigned wordIndex = 2;
+  unsigned wordIndex = 1;
   for (std::vector<ref<Expr> >::iterator ai = arguments.begin(), 
        ae = arguments.end(); ai!=ae; ++ai) {
     if (AllowExternalSymCalls) { // don't bother checking uniqueness
