@@ -455,10 +455,10 @@ public:
   // call exit handler and terminate state
   void terminateStateOnExit(ExecutionState &state);
   // call error handler and terminate state
-  void terminateStateOnError(ExecutionState &state,
-                             const llvm::Twine &message,
-                             const char *suffix,
-                             const llvm::Twine &longMessage="");
+  virtual void terminateStateOnError(ExecutionState &state,
+                                     const llvm::Twine &message,
+                                     const char *suffix,
+                                     const llvm::Twine &longMessage="");
 
   // call error handler and terminate state, for execution errors
   // (things that should not be possible, like illegal instruction or
