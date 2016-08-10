@@ -198,6 +198,10 @@ InstructionInfoTable::getFunctionInfo(const Function *f) const {
 }
 
 void InstructionInfoTable::registerFunction(const llvm::Function *f) {
+	//This string needs to be allocated somewhere, because only a reference
+	//is inserted into infos
+	static std::string dummy("<dummy>");
+
 	  //TODO: This is a hack for S2E. Because functions get registered
 	  //at a later stage (after this class has been initialized), their debug
 	  //information is lacking (on top, since functions are generated,
@@ -215,7 +219,7 @@ void InstructionInfoTable::registerFunction(const llvm::Function *f) {
 		{
 			infos.insert(std::make_pair(&*bbitr,
 							            InstructionInfo(id++,
-							            /* file = */ "<dummy>",
+							            /* file = */ dummy,
 										/* line = */ 0,
 										/* assemblyLine = */ 0)));
 		}
